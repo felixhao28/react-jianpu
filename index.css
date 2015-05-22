@@ -1,0 +1,28 @@
+.note {
+    font-size: 40px;
+}
+
+.octave {
+
+}
+
+.length-dash {
+    stroke: rgb(0,0,0);
+    stroke-width: 4;
+}
+
+.length-underline {
+    stroke: rgb(0,0,0);
+    stroke-width: 2.5;
+}
+
+.bar-line {
+    stroke: rgb(0,0,0);
+    stroke-width: 2.5;
+}
+
+.slur {
+	fill: none;
+    stroke: rgb(0,0,0);
+    stroke-width: 2.5;
+}
