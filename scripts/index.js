@@ -1,47 +1,61 @@
 var App, parse, rowyourboat;
 
 parse = function(m) {
-  var base, handleLastline, i, isNum, lastLine, line, lines, noteDelims, notes, _i, _ref;
+  var base, deli, handleLastline, i, isNum, lastLine, line, lines, lyricsDelims, noteDelims, notes, _i, _j, _k, _l, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3;
   notes = [];
   base = c4;
   lines = m.split("\n");
-  isNum = {
-    "0": true,
-    "1": true,
-    "2": true,
-    "3": true,
-    "4": true,
-    "5": true,
-    "6": true,
-    "7": true
-  };
-  noteDelims = {
-    "<": true,
-    ">": true,
-    "|": true,
-    "#": true,
-    "b": true
-  };
+  isNum = {};
+  _ref = [0, 1, 2, 3, 4, 5, 6, 7];
+  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+    i = _ref[_i];
+    isNum[i] = true;
+  }
+  noteDelims = {};
+  _ref1 = ["<", ">", "#", "b"];
+  for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+    deli = _ref1[_j];
+    noteDelims[deli] = true;
+  }
+  lyricsDelims = {};
+  _ref2 = [",", ".", ";", "?", "!", "(", ")", " ", void 0];
+  for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+    deli = _ref2[_k];
+    lyricsDelims[deli] = true;
+  }
   handleLastline = function(line) {
-    var accidental, c, control, controlLine, duration, extraDuration, i, main, options, pitch, tempo, tempoLine, _i, _len, _results;
-    tempoLine = line.tempoLine, controlLine = line.controlLine, main = line.main;
+    var accidental, c, control, controlLine, duration, extraDuration, lastLyricsChar, lyrics, lyricsChar, lyricsLine, main, options, pitch, tempo, tempoLine, _l, _len3, _results;
+    tempoLine = line.tempoLine, controlLine = line.controlLine, lyricsLine = line.lyricsLine, main = line.main;
     pitch = null;
     extraDuration = 0;
     options = {};
     accidental = 0;
+    lyrics = {};
+    lastLyricsChar = void 0;
     _results = [];
-    for (i = _i = 0, _len = main.length; _i < _len; i = ++_i) {
+    for (i = _l = 0, _len3 = main.length; _l < _len3; i = ++_l) {
       c = main[i];
-      if (pitch !== null && (isNum[c] || noteDelims[c])) {
-        notes.push([pitch + accidental, duration + extraDuration, options]);
+      if (i === main.length - 1 || pitch !== null && (isNum[c] || noteDelims[c])) {
+        if (i === main.length - 1 && lyrics.exists) {
+          lyrics.content += lyricsLine.substr(i);
+        }
+        lyrics.content.trim();
+        notes.push({
+          pitch: pitch + accidental,
+          duration: duration + extraDuration,
+          options: options,
+          lyrics: lyrics
+        });
         options = {};
         pitch = null;
         duration = null;
         extraDuration = 0;
         accidental = 0;
+        lyrics = {};
       }
       tempo = tempoLine != null ? tempoLine[i] : void 0;
       control = controlLine != null ? controlLine[i] : void 0;
+      lyricsChar = lyricsLine != null ? lyricsLine[i] : void 0;
       switch (c) {
         case "0":
           pitch = rest;
@@ -93,7 +107,7 @@ parse = function(m) {
           options.slur = "end";
       }
       if (isNum[c]) {
-        _results.push(duration = (function() {
+        duration = (function() {
           switch (tempo) {
             case "-":
               return 4;
@@ -102,20 +116,30 @@ parse = function(m) {
             default:
               return 8;
           }
-        })());
-      } else {
-        _results.push(void 0);
+        })();
       }
+      if ((lyricsChar != null) && !(isNum[c] && lyricsDelims[lyricsChar])) {
+        if (lyrics.exists) {
+          lyrics.content += lyricsChar;
+        } else if (lyricsChar !== " ") {
+          lyrics.exists = true;
+          lyrics.content = lyricsChar;
+          lyrics.hyphen = !(lastLyricsChar in lyricsDelims);
+        }
+      }
+      _results.push(lastLyricsChar = lyricsChar);
     }
     return _results;
   };
   lastLine = {};
-  for (i = _i = 0, _ref = lines.length; _i < _ref; i = _i += 1) {
+  for (i = _l = 0, _ref3 = lines.length; _l < _ref3; i = _l += 1) {
     line = lines[i];
     if (line[0] === "T") {
       lastLine.tempoLine = line.slice(1);
     } else if (line[0] === "C") {
       lastLine.controlLine = line.slice(1);
+    } else if (line[0] === "L") {
+      lastLine.lyricsLine = line.slice(1);
     } else if (line[0] === "M") {
       if (lastLine.main) {
         handleLastline(lastLine);
@@ -137,7 +161,7 @@ parse = function(m) {
   }
 });
 
-rowyourboat = "M1.1.|123.|3234|5--|\nT      -    - -\nM<1.>5.|3.1.|5432|1--|\nT             - -\nC            Ss";
+rowyourboat = "M1.   1.|  1   2    3.|   3  2   3    4|  5--|\nT              -             -        -\nLRow, row, row your boat, gently down the stream.\nM<1.>5.| 3.     1.| 5   4 3  2|1--|\nT                       -    -\nC                   S   s \nL Ha ha, fooled ya, I'm a submarine.";
 
 App = React.createClass({
   mixins: [React.addons.LinkedStateMixin],
@@ -275,8 +299,6 @@ App = React.createClass({
       "header": "Preview"
     }, React.createElement(Jianpu, {
       "song": song,
-      "width": 1000.,
-      "height": 1000.,
       "sectionsPerLine": sectionsPerLine,
       "alignSections": alignSections
     })));

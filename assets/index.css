@@ -43,3 +43,8 @@
     stroke: rgb(0,0,0);
     stroke-width: 2.5;
 }
+
+.lyrics {
+    font: "Arial";
+    font-size: 20px;
+}

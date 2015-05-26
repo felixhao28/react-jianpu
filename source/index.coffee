@@ -2,38 +2,44 @@ parse = (m) ->
     notes = []
     base = c4
     lines = m.split("\n")
-    isNum =
-        "0": true
-        "1": true
-        "2": true
-        "3": true
-        "4": true
-        "5": true
-        "6": true
-        "7": true
-    noteDelims =
-        "<": true
-        ">": true
-        "|": true
-        "#": true
-        "b": true
+    isNum = {}
+    for i in [0, 1, 2, 3, 4, 5, 6, 7]
+        isNum[i] = true
+    noteDelims = {}
+    for deli in ["<", ">", "#", "b"]
+        noteDelims[deli] = true
+    lyricsDelims = {}
+    for deli in [",", ".", ";", "?", "!", "(", ")", " ", undefined]
+        lyricsDelims[deli] = true
 
     handleLastline = (line) ->
-        {tempoLine, controlLine, main} = line
+        {tempoLine, controlLine, lyricsLine, main} = line
         pitch = null
         extraDuration = 0
         options = {}
         accidental = 0
+        lyrics = {}
+        lastLyricsChar = undefined
         for c, i in main
-            if pitch isnt null and (isNum[c] or noteDelims[c])
-                notes.push [pitch + accidental, duration + extraDuration, options]
+            if i is main.length - 1 or pitch isnt null and (isNum[c] or noteDelims[c])
+                if i is main.length - 1 and lyrics.exists
+                    lyrics.content += lyricsLine.substr(i)
+                lyrics.content.trim()
+                notes.push
+                    pitch: pitch + accidental
+                    duration: duration + extraDuration
+                    options: options
+                    lyrics: lyrics
                 options = {}
                 pitch = null
                 duration = null
                 extraDuration = 0
                 accidental = 0
+                lyrics = {}
+
             tempo = tempoLine?[i]
             control = controlLine?[i]
+            lyricsChar = lyricsLine?[i]
             switch c
                 when "0"
                     pitch = rest
@@ -76,6 +82,15 @@ parse = (m) ->
                         when "-" then 4
                         when "=" then 2
                         else 8
+            if lyricsChar? and not (isNum[c] and lyricsDelims[lyricsChar])
+                if lyrics.exists
+                    lyrics.content += lyricsChar
+                else if lyricsChar isnt " "
+                    lyrics.exists = true
+                    lyrics.content = lyricsChar
+                    lyrics.hyphen = lastLyricsChar not of lyricsDelims
+
+            lastLyricsChar = lyricsChar
 
     lastLine = {}
     for i in [0...lines.length] by 1
@@ -84,6 +99,8 @@ parse = (m) ->
             lastLine.tempoLine = line[1..]
         else if line[0] is "C"
             lastLine.controlLine = line[1..]
+        else if line[0] is "L"
+            lastLine.lyricsLine = line[1..]
         else if line[0] is "M"
             if lastLine.main
                 handleLastline(lastLine)
@@ -98,11 +115,13 @@ controlSyms:
     "s": "slur end"
 
 rowyourboat = """
-M1.1.|123.|3234|5--|
-T      -    - -
-M<1.>5.|3.1.|5432|1--|
-T             - -
-C            Ss
+M1.   1.|  1   2    3.|   3  2   3    4|  5--|
+T              -             -        -
+LRow, row, row your boat, gently down the stream.
+M<1.>5.| 3.     1.| 5   4 3  2|1--|
+T                       -    -
+C                   S   s 
+L Ha ha, fooled ya, I'm a submarine.
 """
 
 App = React.createClass
@@ -193,7 +212,7 @@ App = React.createClass
                 </Row>
             </Grid>
             <Panel header="Preview">
-                <Jianpu song={song} width={1000} height={1000} sectionsPerLine={sectionsPerLine} alignSections={alignSections}/>
+                <Jianpu song={song} sectionsPerLine={sectionsPerLine} alignSections={alignSections}/>
             </Panel>
         </div>
 

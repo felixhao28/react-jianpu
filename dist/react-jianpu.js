@@ -256,10 +256,10 @@ Jianpu = React.createClass({
         }
       }
     },
-    estimateXSpan: function(note, nextNote) {
+    estimateMusicXSpan: function(note, nextNote) {
       var duration, nextDuration;
-      duration = this.duration(note[1]);
-      nextDuration = nextNote ? this.duration(nextNote[1]) : null;
+      duration = this.duration(note.duration);
+      nextDuration = nextNote ? this.duration(nextNote.duration) : null;
       if (duration.main === (nextDuration != null ? nextDuration.main : void 0)) {
         if (duration.main < 8) {
           return 20 + 10 * duration.nDots;
@@ -273,6 +273,19 @@ Jianpu = React.createClass({
       } else {
         return 40 + 40 * duration.nDashes + 20 * duration.nDots;
       }
+    },
+    estimateLyricsXSpan: function(note) {
+      if (note.lyrics.exists) {
+        return 10 + calculateSize(note.lyrics.content, {
+          font: "Arial",
+          fontSize: "20px"
+        }).width;
+      } else {
+        return 0;
+      }
+    },
+    estimateXSpan: function(note, nextNote) {
+      return Math.max(this.estimateMusicXSpan(note, nextNote), this.estimateLyricsXSpan(note));
     },
     estimateSectionXSpan: function(section) {
       var i, note, offset, _i, _len;
@@ -289,9 +302,12 @@ Jianpu = React.createClass({
     }
   },
   render: function() {
-    var alignSections, barX, barY, comp, computedNotes, computedSections, currentSection, delta, duration, height, i, j, nSectionsThisLine, newWidth, newstartX, newx, note, noteInfo, notes, offset, pitch, s, section, sectionLength, sectionOffsets, sectionWidth, sections, sectionsPerLine, slur, slurEndX, slurEndY, slurX, slurY, slurs, song, startX, startY, width, x, x1, x2, xSpan, y, y1, y2, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _len7, _m, _n, _o, _p, _q, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
+    var alignSections, barX, barY, comp, computedNotes, computedSections, currentSection, delta, duration, height, heightPerLine, i, j, lastWidth, marginBottom, nLines, nSectionsThisLine, newWidth, newstartX, newx, note, noteInfo, notes, offset, pitch, section, sectionLength, sectionOffsets, sectionPadding, sectionWidth, sections, sectionsPerLine, slur, slurEndX, slurEndY, slurX, slurY, slurs, song, startX, startY, width, x, x1, x2, xSpan, y, y1, y2, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _len7, _len8, _m, _n, _o, _p, _q, _r, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
     _ref = this.state, sectionLength = _ref.sectionLength, song = _ref.song;
     _ref1 = this.props, width = _ref1.width, height = _ref1.height, sectionsPerLine = _ref1.sectionsPerLine, alignSections = _ref1.alignSections;
+    heightPerLine = 200;
+    marginBottom = 150;
+    sectionPadding = 20;
     if (song == null) {
       return React.createElement("div", null);
     } else {
@@ -301,7 +317,7 @@ Jianpu = React.createClass({
       _ref2 = song.melody;
       for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
         note = _ref2[_i];
-        duration = note[1];
+        duration = note.duration;
         offset += duration;
         currentSection.push(note);
         if (offset % sectionLength === 0) {
@@ -320,8 +336,8 @@ Jianpu = React.createClass({
         computedNotes = [];
         for (j = _k = 0, _len2 = section.length; _k < _len2; j = ++_k) {
           note = section[j];
-          pitch = this.analyser.pitch(note[0]);
-          duration = this.analyser.duration(note[1]);
+          pitch = this.analyser.pitch(note.pitch);
+          duration = this.analyser.duration(note.duration);
           computedNotes.push({
             note: note,
             x: x,
@@ -335,12 +351,12 @@ Jianpu = React.createClass({
           notes: computedNotes,
           startX: startX,
           startY: startY,
-          x: x += 20,
+          x: x += sectionPadding,
           y: y
         });
         nSectionsThisLine++;
         if (nSectionsThisLine >= sectionsPerLine) {
-          y += 100;
+          y += heightPerLine;
           x = 0;
           nSectionsThisLine = 0;
         }
@@ -358,7 +374,6 @@ Jianpu = React.createClass({
         for (_l = 0, _len3 = computedSections.length; _l < _len3; _l++) {
           section = computedSections[_l];
           newWidth = section.x - section.startX;
-          console.log(newWidth);
           if (newWidth > sectionWidth[nSectionsThisLine]) {
             sectionWidth[nSectionsThisLine] = newWidth;
           }
@@ -368,15 +383,6 @@ Jianpu = React.createClass({
         for (i = _m = 0, _ref3 = sectionWidth.length; _m < _ref3; i = _m += 1) {
           sectionOffsets[i + 1] = sectionOffsets[i] + sectionWidth[i];
         }
-        console.log((function() {
-          var _len4, _n, _results;
-          _results = [];
-          for (_n = 0, _len4 = sectionOffsets.length; _n < _len4; _n++) {
-            s = sectionOffsets[_n];
-            _results.push(s);
-          }
-          return _results;
-        })());
         nSectionsThisLine = 0;
         for (_n = 0, _len4 = computedSections.length; _n < _len4; _n++) {
           section = computedSections[_n];
@@ -400,8 +406,8 @@ Jianpu = React.createClass({
         _ref5 = section.notes;
         for (_q = 0, _len7 = _ref5.length; _q < _len7; _q++) {
           noteInfo = _ref5[_q];
-          if (noteInfo.note.length > 2) {
-            slur = noteInfo.note[2].slur;
+          if (noteInfo.note.options != null) {
+            slur = noteInfo.note.options.slur;
             if (slur === "start") {
               slurX = noteInfo.x + 20;
               slurY = noteInfo.y + 40 - 10 * noteInfo.pitch.nOctaves;
@@ -413,6 +419,31 @@ Jianpu = React.createClass({
           }
         }
       }
+      if (width == null) {
+        nSectionsThisLine = 0;
+        width = -1;
+        lastWidth = 0;
+        for (_r = 0, _len8 = computedSections.length; _r < _len8; _r++) {
+          section = computedSections[_r];
+          lastWidth += section.x - section.startX;
+          nSectionsThisLine = (nSectionsThisLine + 1) % sectionsPerLine;
+          if (nSectionsThisLine === 1 && width < lastWidth) {
+            width = lastWidth;
+            lastWidth = 0;
+          }
+        }
+        if (nSectionsThisLine < sectionsPerLine - 1 && currentSection.length > 0) {
+          lastWidth += this.analyser.estimateSectionXSpan(currentSection);
+          if (width < lastWidth) {
+            width = lastWidth;
+          }
+        }
+        width += sectionPadding;
+      }
+      if (height == null) {
+        nLines = Math.floor((computedSections.length + (currentSection.length > 0)) / sectionsPerLine);
+        height = nLines * heightPerLine + marginBottom;
+      }
       return React.createElement("svg", {
         "width": width,
         "height": height
@@ -421,17 +452,17 @@ Jianpu = React.createClass({
         "y": 20.,
         "className": "signature"
       }, "" + song.key.left + "=" + song.key.right + " " + song.time.upper + "/" + song.time.lower), (function() {
-        var _len8, _r, _results;
+        var _len9, _results, _s;
         _results = [];
-        for (i = _r = 0, _len8 = computedSections.length; _r < _len8; i = ++_r) {
+        for (i = _s = 0, _len9 = computedSections.length; _s < _len9; i = ++_s) {
           section = computedSections[i];
           notes = section.notes, slurs = section.slurs;
           _results.push(React.createElement("g", {
             "key": i
           }, (function() {
-            var _len9, _results1, _s;
+            var _len10, _results1, _t;
             _results1 = [];
-            for (j = _s = 0, _len9 = notes.length; _s < _len9; j = ++_s) {
+            for (j = _t = 0, _len10 = notes.length; _t < _len10; j = ++_t) {
               noteInfo = notes[j];
               note = noteInfo.note, pitch = noteInfo.pitch, duration = noteInfo.duration;
               _results1.push(React.createElement(Jianpu.Note, {
@@ -445,9 +476,9 @@ Jianpu = React.createClass({
             }
             return _results1;
           })(), (function() {
-            var _len9, _results1, _s;
+            var _len10, _results1, _t;
             _results1 = [];
-            for (j = _s = 0, _len9 = slurs.length; _s < _len9; j = ++_s) {
+            for (j = _t = 0, _len10 = slurs.length; _t < _len10; j = ++_t) {
               slur = slurs[j];
               x1 = slur[0];
               y1 = slur[1];
@@ -483,12 +514,12 @@ Jianpu = React.createClass({
         }
         return _results;
       })(), (function() {
-        var _len8, _r, _results;
+        var _len9, _results, _s;
         _results = [];
-        for (i = _r = 0, _len8 = currentSection.length; _r < _len8; i = ++_r) {
+        for (i = _s = 0, _len9 = currentSection.length; _s < _len9; i = ++_s) {
           note = currentSection[i];
-          pitch = this.analyser.pitch(note[0]);
-          duration = this.analyser.duration(note[1]);
+          pitch = this.analyser.pitch(note.pitch);
+          duration = this.analyser.duration(note.duration);
           comp = React.createElement(Jianpu.Note, {
             "key": i,
             "note": note,
@@ -508,10 +539,11 @@ Jianpu = React.createClass({
 
 Jianpu.Note = React.createClass({
   render: function() {
-    var accidental, duration, i, main, nDashes, nDots, nOctaves, nUnderDashes, note, number, pitch, x, y, _ref;
+    var accidental, duration, i, lyrics, main, nDashes, nDots, nOctaves, nUnderDashes, note, number, pitch, x, y, _ref;
     _ref = this.props, note = _ref.note, x = _ref.x, y = _ref.y, pitch = _ref.pitch, duration = _ref.duration;
     nOctaves = pitch.nOctaves, number = pitch.number, accidental = pitch.accidental;
     main = duration.main, nDashes = duration.nDashes, nDots = duration.nDots;
+    lyrics = note.lyrics;
     nUnderDashes = (function() {
       switch (main) {
         case 4:
@@ -598,6 +630,10 @@ Jianpu.Note = React.createClass({
         }));
       }
       return _results;
-    })());
+    })(), (lyrics.exists ? React.createElement("text", {
+      "className": "lyrics",
+      "x": 10.,
+      "y": 135.
+    }, "" + (lyrics.hyphen ? "-" : "") + lyrics.content) : void 0));
   }
 });

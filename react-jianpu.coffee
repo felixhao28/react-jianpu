@@ -171,11 +171,11 @@ Jianpu = React.createClass
                     else
                         throw "bad duration"
 
-        estimateXSpan: (note, nextNote) ->
-            duration = @duration(note[1])
+        estimateMusicXSpan: (note, nextNote) ->
+            duration = @duration(note.duration)
             nextDuration =
                 if nextNote
-                    @duration(nextNote[1])
+                    @duration(nextNote.duration)
                 else
                     null
 
@@ -190,6 +190,15 @@ Jianpu = React.createClass
             else
                 40 + 40 * duration.nDashes + 20 * duration.nDots
 
+        estimateLyricsXSpan: (note) ->
+            if note.lyrics.exists
+                10 + calculateSize(note.lyrics.content, {font: "Arial", fontSize: "20px"}).width
+            else
+                0
+
+        estimateXSpan: (note, nextNote) ->
+            Math.max @estimateMusicXSpan(note, nextNote), @estimateLyricsXSpan(note)
+
         estimateSectionXSpan: (section) ->
             if section.length is 0
                 0
@@ -203,6 +212,11 @@ Jianpu = React.createClass
     render: ->
         {sectionLength, song} = @state
         {width, height, sectionsPerLine, alignSections} = @props
+
+        heightPerLine = 200
+        marginBottom = 150
+        sectionPadding = 20
+
         if not song?
             <div />
         else
@@ -210,7 +224,7 @@ Jianpu = React.createClass
             sections = []
             currentSection = []
             for note in song.melody
-                duration = note[1]
+                duration = note.duration
                 offset += duration
                 currentSection.push note
                 if offset % sectionLength is 0
@@ -228,8 +242,8 @@ Jianpu = React.createClass
                 startY = y
                 computedNotes = []
                 for note, j in section
-                    pitch = @analyser.pitch(note[0])
-                    duration = @analyser.duration(note[1])
+                    pitch = @analyser.pitch(note.pitch)
+                    duration = @analyser.duration(note.duration)
                     computedNotes.push
                         note: note
                         x: x
@@ -242,13 +256,13 @@ Jianpu = React.createClass
                     notes: computedNotes
                     startX: startX
                     startY: startY
-                    x: x += 20
+                    x: x += sectionPadding
                     y: y
 
                 nSectionsThisLine++
                 if nSectionsThisLine >= sectionsPerLine
                     #next line
-                    y += 100
+                    y += heightPerLine
                     x = 0
                     nSectionsThisLine = 0
 
@@ -257,7 +271,6 @@ Jianpu = React.createClass
                 nSectionsThisLine = 0
                 for section in computedSections
                     newWidth = section.x - section.startX
-                    console.log newWidth
                     if newWidth > sectionWidth[nSectionsThisLine]
                         sectionWidth[nSectionsThisLine] = newWidth
                     nSectionsThisLine = (nSectionsThisLine + 1) % sectionsPerLine
@@ -265,8 +278,6 @@ Jianpu = React.createClass
                 sectionOffsets = [0]
                 for i in [0...sectionWidth.length] by 1
                     sectionOffsets[i + 1] = sectionOffsets[i] + sectionWidth[i]
-
-                console.log (s for s in sectionOffsets)
 
                 nSectionsThisLine = 0
                 for section in computedSections
@@ -283,8 +294,8 @@ Jianpu = React.createClass
             for section in computedSections
                 section.slurs = []
                 for noteInfo in section.notes
-                    if noteInfo.note.length > 2
-                        slur = noteInfo.note[2].slur
+                    if noteInfo.note.options?
+                        slur = noteInfo.note.options.slur
                         if slur is "start"
                             slurX = noteInfo.x + 20
                             slurY = noteInfo.y + 40 - 10 * noteInfo.pitch.nOctaves
@@ -292,6 +303,26 @@ Jianpu = React.createClass
                             slurEndX = noteInfo.x + 20
                             slurEndY = noteInfo.y + 40 - 10 * noteInfo.pitch.nOctaves
                             section.slurs.push [slurX, slurY, slurEndX, slurEndY]
+
+            if not width?
+                nSectionsThisLine = 0
+                width = -1
+                lastWidth = 0
+                for section in computedSections
+                    lastWidth += section.x - section.startX
+                    nSectionsThisLine = (nSectionsThisLine + 1) % sectionsPerLine
+                    if nSectionsThisLine is 1 and width < lastWidth
+                        width = lastWidth
+                        lastWidth = 0
+                if nSectionsThisLine < sectionsPerLine - 1 and currentSection.length > 0
+                    lastWidth += @analyser.estimateSectionXSpan(currentSection)
+                    if width < lastWidth
+                        width = lastWidth
+                width += sectionPadding
+
+            if not height?
+                nLines = Math.floor((computedSections.length + (currentSection.length > 0)) / sectionsPerLine)
+                height = nLines * heightPerLine + marginBottom
 
             <svg width={width} height={height}>
                 <text x={10} y={20} className="signature">{"#{song.key.left}=#{song.key.right} #{song.time.upper}/#{song.time.lower}"}</text>
@@ -329,8 +360,8 @@ Jianpu = React.createClass
                 }
                 {
                     for note, i in currentSection
-                        pitch = @analyser.pitch(note[0])
-                        duration = @analyser.duration(note[1])
+                        pitch = @analyser.pitch(note.pitch)
+                        duration = @analyser.duration(note.duration)
                         comp = <Jianpu.Note key={i} note={note} x={x} y={y} pitch={pitch} duration={duration}/>
                         x += @analyser.estimateXSpan(note, section[i + 1])
                         comp
@@ -343,6 +374,7 @@ Jianpu.Note = React.createClass
         {note, x, y, pitch, duration} = @props
         {nOctaves, number, accidental} = pitch
         {main, nDashes, nDots} = duration
+        lyrics = note.lyrics
 
         nUnderDashes =
             switch main
@@ -372,5 +404,9 @@ Jianpu.Note = React.createClass
             {
                 for i in [0...nDots]
                     <circle key={i} className="length-dot" cx={40 + 40 * nDashes + 10 * i} cy={70} r={3.5} />
+            }
+            {
+                if lyrics.exists
+                    <text className="lyrics" x={10} y={135}>{"#{if lyrics.hyphen then "-" else ""}#{lyrics.content}"}</text>
             }
         </g>
