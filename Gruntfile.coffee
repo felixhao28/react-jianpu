@@ -1,7 +1,7 @@
 module.exports = (grunt) ->
     require("load-grunt-tasks")(grunt)
-    grunt.registerTask "default", "to watch & compile", ["cjsx", "watch"]
-    grunt.registerTask "build", "to compile", ["cjsx"]
+    grunt.registerTask "default", "to watch & compile", ["cjsx:build", "watch"]
+    grunt.registerTask "build", "to compile", ["cjsx:build"]
     pkg = grunt.file.readJSON "package.json"
     grunt.initConfig
         pkg: pkg
@@ -12,9 +12,15 @@ module.exports = (grunt) ->
                     bare: true
                 files: [
                         expand: true
-                        cwd: ""
+                        cwd: "source"
                         src: ["**/*.coffee"]
-                        desc: ""
+                        dest: "scripts"
+                        ext: ".js"
+                    ,
+                        expand: true
+                        cwd: ""
+                        src: ["*.coffee", "!Gruntfile.coffee"]
+                        dest: "dist"
                         ext: ".js"
                 ]
 

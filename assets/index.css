@@ -1,5 +1,17 @@
+#mycontainer {
+    padding: 10px;
+}
+
+.markup-input textarea{
+    font-family: "Lucida Console", Monaco, monospace;
+}
+
 .note {
     font-size: 40px;
+}
+
+.signature {
+    font-size: 20px;
 }
 
 .octave {
@@ -17,6 +29,11 @@
 }
 
 .bar-line {
+    stroke: rgb(0,0,0);
+    stroke-width: 2.5;
+}
+
+.doublebar-line {
     stroke: rgb(0,0,0);
     stroke-width: 2.5;
 }

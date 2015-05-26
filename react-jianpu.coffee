@@ -82,13 +82,19 @@ notesMap =
         accidental: 0
 
 Jianpu = React.createClass
+    getDefaultProps: ->
+        sectionsPerLine: 4
+        alignSections: false
+
     getInitialState: ->
         sectionLength: 32
-        notes: []
+        song: null
 
     componentDidMount: ->
+        {song} = @props
         @setState
-            notes: @props.notes
+            song: song
+            sectionLength: parseFloat(song.time.upper) * 32 / parseFloat(song.time.lower)
 
     analyser:
         pitch: (pitch) ->
@@ -192,71 +198,144 @@ Jianpu = React.createClass
                 for note, i in section
                     offset += @estimateXSpan(note, section[i + 1])
 
-                offset + 40
+                offset + 20
 
     render: ->
-        {sectionLength, notes} = @state
-        {width, height} = @props
-        offset = 0
-        sections = []
-        currentSection = []
-        for note in notes
-            duration = note[1]
-            offset += duration
-            currentSection.push note
-            if offset % sectionLength is 0
-                sections.push currentSection
-                currentSection = []
+        {sectionLength, song} = @state
+        {width, height, sectionsPerLine, alignSections} = @props
+        if not song?
+            <div />
+        else
+            offset = 0
+            sections = []
+            currentSection = []
+            for note in song.melody
+                duration = note[1]
+                offset += duration
+                currentSection.push note
+                if offset % sectionLength is 0
+                    sections.push currentSection
+                    currentSection = []
 
-        slurX = slurY = 0
-        slurs = []
-                
-        x = y = 0
+            slurX = slurY = 0
+                    
+            x = y = 0
 
-        comps = []
-        for section, i in sections
-            comps.push <g key={i}>
-            {
+            nSectionsThisLine = 0
+            computedSections = []
+            for section, i in sections
+                startX = x
+                startY = y
+                computedNotes = []
                 for note, j in section
                     pitch = @analyser.pitch(note[0])
                     duration = @analyser.duration(note[1])
-                    if note.length > 2
-                        slur = note[2].slur
-                        if slur is "start"
-                            slurX = x + 20
-                            slurY = y + 40 - 10 * pitch.nOctaves
-                        else if slur is "end"
-                            slurEndX = x + 20
-                            slurEndY = y + 40 - 10 * pitch.nOctaves
-                            slurs.push [slurX, slurY, slurEndX, slurEndY]
-                    comp = <Jianpu.Note key={j} note={note} x={x} y={y} pitch={pitch} duration={duration}/>
+                    computedNotes.push
+                        note: note
+                        x: x
+                        y: y
+                        pitch: pitch
+                        duration: duration
                     x += @analyser.estimateXSpan(note, section[j + 1])
-                    comp
-            }
-            {
-                for slur, j in slurs
-                    x1 = slur[0]
-                    y1 = slur[1]
-                    x2 = slur[2]
-                    y2 = slur[3]
-                    <path key={"#{i},#{j}"} className="slur" d="M#{x1},#{y1} C#{x1+20},#{y1-20} #{x2-20},#{y2-20} #{x2},#{y2}" />
-            }
-                <line className="bar-line" x1={10 + x} y1={30 + y} x2={10 + x} y2={110 + y} />
-            </g>
-            x += 20
-            slurs = []
+                    
+                computedSections.push
+                    notes: computedNotes
+                    startX: startX
+                    startY: startY
+                    x: x += 20
+                    y: y
 
-        <svg width={width} height={height}>
-            {comps}
-            {
-                for note, i in currentSection
-                    pitch = @analyser.pitch(note[0])
-                    duration = @analyser.duration(note[1])
-                    comp = <Jianpu.Note key={i} note={note} x={x} y={y} pitch={pitch} duration={duration}/>
-                    x += @analyser.estimateXSpan(note, section[i + 1])
-                    comp
-            }
-        </svg>
+                nSectionsThisLine++
+                if nSectionsThisLine >= sectionsPerLine
+                    #next line
+                    y += 100
+                    x = 0
+                    nSectionsThisLine = 0
+
+            if alignSections
+                sectionWidth = (0 for i in [0...sectionsPerLine] by 1)
+                nSectionsThisLine = 0
+                for section in computedSections
+                    newWidth = section.x - section.startX
+                    console.log newWidth
+                    if newWidth > sectionWidth[nSectionsThisLine]
+                        sectionWidth[nSectionsThisLine] = newWidth
+                    nSectionsThisLine = (nSectionsThisLine + 1) % sectionsPerLine
+
+                sectionOffsets = [0]
+                for i in [0...sectionWidth.length] by 1
+                    sectionOffsets[i + 1] = sectionOffsets[i] + sectionWidth[i]
+
+                console.log (s for s in sectionOffsets)
+
+                nSectionsThisLine = 0
+                for section in computedSections
+                    xSpan = section.x - section.startX
+                    newstartX = sectionOffsets[nSectionsThisLine]
+                    newx = sectionOffsets[nSectionsThisLine + 1]
+                    delta = (newx - newstartX - xSpan) / section.notes.length
+                    for noteInfo, i in section.notes
+                        noteInfo.x = (noteInfo.x - section.startX) + delta * (i + 1)  + newstartX
+                    section.startX = newstartX
+                    section.x = newx
+                    nSectionsThisLine = (nSectionsThisLine + 1) % sectionsPerLine
+
+            for section in computedSections
+                section.slurs = []
+                for noteInfo in section.notes
+                    if noteInfo.note.length > 2
+                        slur = noteInfo.note[2].slur
+                        if slur is "start"
+                            slurX = noteInfo.x + 20
+                            slurY = noteInfo.y + 40 - 10 * noteInfo.pitch.nOctaves
+                        else if slur is "end"
+                            slurEndX = noteInfo.x + 20
+                            slurEndY = noteInfo.y + 40 - 10 * noteInfo.pitch.nOctaves
+                            section.slurs.push [slurX, slurY, slurEndX, slurEndY]
+
+            <svg width={width} height={height}>
+                <text x={10} y={20} className="signature">{"#{song.key.left}=#{song.key.right} #{song.time.upper}/#{song.time.lower}"}</text>
+                {
+                    for section, i in computedSections
+                        {notes, slurs} = section
+                        <g key={i}>
+                        {
+                            for noteInfo, j in notes
+                                {note, pitch, duration} = noteInfo
+                                <Jianpu.Note key={j} note={note} x={noteInfo.x} y={noteInfo.y} pitch={pitch} duration={duration}/>
+                        }
+                        {
+                            for slur, j in slurs
+                                x1 = slur[0]
+                                y1 = slur[1]
+                                x2 = slur[2]
+                                y2 = slur[3]
+                                <path key={"#{i},#{j}"} className="slur" d="M#{x1},#{y1} C#{x1+20},#{y1-20} #{x2-20},#{y2-20} #{x2},#{y2}" />
+                        }
+                        {
+                            barX = section.x
+                            barY = section.y
+                            if i is sections.length - 1 and currentSection.length is 0
+                                <g className="doublebar-line">
+                                    <line x1={barX} y1={30 + barY} x2={barX} y2={110 + barY} />
+                                    <line x1={5 + barX} y1={30 + barY} x2={5 + barX} y2={110 + barY} />
+                                </g>
+                            else
+                                <g className="bar-line">
+                                    <line x1={barX} y1={30 + barY} x2={barX} y2={110 + barY} />
+                                </g>
+                        }
+                        </g>
+                }
+                {
+                    for note, i in currentSection
+                        pitch = @analyser.pitch(note[0])
+                        duration = @analyser.duration(note[1])
+                        comp = <Jianpu.Note key={i} note={note} x={x} y={y} pitch={pitch} duration={duration}/>
+                        x += @analyser.estimateXSpan(note, section[i + 1])
+                        comp
+                }
+            </svg>
 
 Jianpu.Note = React.createClass
 

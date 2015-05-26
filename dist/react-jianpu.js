@@ -129,15 +129,24 @@ notesMap = {
 };
 
 Jianpu = React.createClass({
+  getDefaultProps: function() {
+    return {
+      sectionsPerLine: 4,
+      alignSections: false
+    };
+  },
   getInitialState: function() {
     return {
       sectionLength: 32,
-      notes: []
+      song: null
     };
   },
   componentDidMount: function() {
+    var song;
+    song = this.props.song;
     return this.setState({
-      notes: this.props.notes
+      song: song,
+      sectionLength: parseFloat(song.time.upper) * 32 / parseFloat(song.time.lower)
     });
   },
   analyser: {
@@ -275,114 +284,225 @@ Jianpu = React.createClass({
           note = section[i];
           offset += this.estimateXSpan(note, section[i + 1]);
         }
-        return offset + 40;
+        return offset + 20;
       }
     }
   },
   render: function() {
-    var comp, comps, currentSection, duration, height, i, j, note, notes, offset, pitch, section, sectionLength, sections, slur, slurEndX, slurEndY, slurX, slurY, slurs, width, x, x1, x2, y, y1, y2, _i, _j, _len, _len1, _ref, _ref1;
-    _ref = this.state, sectionLength = _ref.sectionLength, notes = _ref.notes;
-    _ref1 = this.props, width = _ref1.width, height = _ref1.height;
-    offset = 0;
-    sections = [];
-    currentSection = [];
-    for (_i = 0, _len = notes.length; _i < _len; _i++) {
-      note = notes[_i];
-      duration = note[1];
-      offset += duration;
-      currentSection.push(note);
-      if (offset % sectionLength === 0) {
-        sections.push(currentSection);
-        currentSection = [];
+    var alignSections, barX, barY, comp, computedNotes, computedSections, currentSection, delta, duration, height, i, j, nSectionsThisLine, newWidth, newstartX, newx, note, noteInfo, notes, offset, pitch, s, section, sectionLength, sectionOffsets, sectionWidth, sections, sectionsPerLine, slur, slurEndX, slurEndY, slurX, slurY, slurs, song, startX, startY, width, x, x1, x2, xSpan, y, y1, y2, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _len7, _m, _n, _o, _p, _q, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
+    _ref = this.state, sectionLength = _ref.sectionLength, song = _ref.song;
+    _ref1 = this.props, width = _ref1.width, height = _ref1.height, sectionsPerLine = _ref1.sectionsPerLine, alignSections = _ref1.alignSections;
+    if (song == null) {
+      return React.createElement("div", null);
+    } else {
+      offset = 0;
+      sections = [];
+      currentSection = [];
+      _ref2 = song.melody;
+      for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
+        note = _ref2[_i];
+        duration = note[1];
+        offset += duration;
+        currentSection.push(note);
+        if (offset % sectionLength === 0) {
+          sections.push(currentSection);
+          currentSection = [];
+        }
       }
-    }
-    slurX = slurY = 0;
-    slurs = [];
-    x = y = 0;
-    comps = [];
-    for (i = _j = 0, _len1 = sections.length; _j < _len1; i = ++_j) {
-      section = sections[i];
-      comps.push(React.createElement("g", {
-        "key": i
-      }, (function() {
-        var _k, _len2, _results;
-        _results = [];
+      slurX = slurY = 0;
+      x = y = 0;
+      nSectionsThisLine = 0;
+      computedSections = [];
+      for (i = _j = 0, _len1 = sections.length; _j < _len1; i = ++_j) {
+        section = sections[i];
+        startX = x;
+        startY = y;
+        computedNotes = [];
         for (j = _k = 0, _len2 = section.length; _k < _len2; j = ++_k) {
           note = section[j];
           pitch = this.analyser.pitch(note[0]);
           duration = this.analyser.duration(note[1]);
-          if (note.length > 2) {
-            slur = note[2].slur;
+          computedNotes.push({
+            note: note,
+            x: x,
+            y: y,
+            pitch: pitch,
+            duration: duration
+          });
+          x += this.analyser.estimateXSpan(note, section[j + 1]);
+        }
+        computedSections.push({
+          notes: computedNotes,
+          startX: startX,
+          startY: startY,
+          x: x += 20,
+          y: y
+        });
+        nSectionsThisLine++;
+        if (nSectionsThisLine >= sectionsPerLine) {
+          y += 100;
+          x = 0;
+          nSectionsThisLine = 0;
+        }
+      }
+      if (alignSections) {
+        sectionWidth = (function() {
+          var _l, _results;
+          _results = [];
+          for (i = _l = 0; _l < sectionsPerLine; i = _l += 1) {
+            _results.push(0);
+          }
+          return _results;
+        })();
+        nSectionsThisLine = 0;
+        for (_l = 0, _len3 = computedSections.length; _l < _len3; _l++) {
+          section = computedSections[_l];
+          newWidth = section.x - section.startX;
+          console.log(newWidth);
+          if (newWidth > sectionWidth[nSectionsThisLine]) {
+            sectionWidth[nSectionsThisLine] = newWidth;
+          }
+          nSectionsThisLine = (nSectionsThisLine + 1) % sectionsPerLine;
+        }
+        sectionOffsets = [0];
+        for (i = _m = 0, _ref3 = sectionWidth.length; _m < _ref3; i = _m += 1) {
+          sectionOffsets[i + 1] = sectionOffsets[i] + sectionWidth[i];
+        }
+        console.log((function() {
+          var _len4, _n, _results;
+          _results = [];
+          for (_n = 0, _len4 = sectionOffsets.length; _n < _len4; _n++) {
+            s = sectionOffsets[_n];
+            _results.push(s);
+          }
+          return _results;
+        })());
+        nSectionsThisLine = 0;
+        for (_n = 0, _len4 = computedSections.length; _n < _len4; _n++) {
+          section = computedSections[_n];
+          xSpan = section.x - section.startX;
+          newstartX = sectionOffsets[nSectionsThisLine];
+          newx = sectionOffsets[nSectionsThisLine + 1];
+          delta = (newx - newstartX - xSpan) / section.notes.length;
+          _ref4 = section.notes;
+          for (i = _o = 0, _len5 = _ref4.length; _o < _len5; i = ++_o) {
+            noteInfo = _ref4[i];
+            noteInfo.x = (noteInfo.x - section.startX) + delta * (i + 1) + newstartX;
+          }
+          section.startX = newstartX;
+          section.x = newx;
+          nSectionsThisLine = (nSectionsThisLine + 1) % sectionsPerLine;
+        }
+      }
+      for (_p = 0, _len6 = computedSections.length; _p < _len6; _p++) {
+        section = computedSections[_p];
+        section.slurs = [];
+        _ref5 = section.notes;
+        for (_q = 0, _len7 = _ref5.length; _q < _len7; _q++) {
+          noteInfo = _ref5[_q];
+          if (noteInfo.note.length > 2) {
+            slur = noteInfo.note[2].slur;
             if (slur === "start") {
-              slurX = x + 20;
-              slurY = y + 40 - 10 * pitch.nOctaves;
+              slurX = noteInfo.x + 20;
+              slurY = noteInfo.y + 40 - 10 * noteInfo.pitch.nOctaves;
             } else if (slur === "end") {
-              slurEndX = x + 20;
-              slurEndY = y + 40 - 10 * pitch.nOctaves;
-              slurs.push([slurX, slurY, slurEndX, slurEndY]);
+              slurEndX = noteInfo.x + 20;
+              slurEndY = noteInfo.y + 40 - 10 * noteInfo.pitch.nOctaves;
+              section.slurs.push([slurX, slurY, slurEndX, slurEndY]);
             }
           }
+        }
+      }
+      return React.createElement("svg", {
+        "width": width,
+        "height": height
+      }, React.createElement("text", {
+        "x": 10.,
+        "y": 20.,
+        "className": "signature"
+      }, "" + song.key.left + "=" + song.key.right + " " + song.time.upper + "/" + song.time.lower), (function() {
+        var _len8, _r, _results;
+        _results = [];
+        for (i = _r = 0, _len8 = computedSections.length; _r < _len8; i = ++_r) {
+          section = computedSections[i];
+          notes = section.notes, slurs = section.slurs;
+          _results.push(React.createElement("g", {
+            "key": i
+          }, (function() {
+            var _len9, _results1, _s;
+            _results1 = [];
+            for (j = _s = 0, _len9 = notes.length; _s < _len9; j = ++_s) {
+              noteInfo = notes[j];
+              note = noteInfo.note, pitch = noteInfo.pitch, duration = noteInfo.duration;
+              _results1.push(React.createElement(Jianpu.Note, {
+                "key": j,
+                "note": note,
+                "x": noteInfo.x,
+                "y": noteInfo.y,
+                "pitch": pitch,
+                "duration": duration
+              }));
+            }
+            return _results1;
+          })(), (function() {
+            var _len9, _results1, _s;
+            _results1 = [];
+            for (j = _s = 0, _len9 = slurs.length; _s < _len9; j = ++_s) {
+              slur = slurs[j];
+              x1 = slur[0];
+              y1 = slur[1];
+              x2 = slur[2];
+              y2 = slur[3];
+              _results1.push(React.createElement("path", {
+                "key": "" + i + "," + j,
+                "className": "slur",
+                "d": "M" + x1 + "," + y1 + " C" + (x1 + 20) + "," + (y1 - 20) + " " + (x2 - 20) + "," + (y2 - 20) + " " + x2 + "," + y2
+              }));
+            }
+            return _results1;
+          })(), (barX = section.x, barY = section.y, i === sections.length - 1 && currentSection.length === 0 ? React.createElement("g", {
+            "className": "doublebar-line"
+          }, React.createElement("line", {
+            "x1": barX,
+            "y1": 30 + barY,
+            "x2": barX,
+            "y2": 110 + barY
+          }), React.createElement("line", {
+            "x1": 5 + barX,
+            "y1": 30 + barY,
+            "x2": 5 + barX,
+            "y2": 110 + barY
+          })) : React.createElement("g", {
+            "className": "bar-line"
+          }, React.createElement("line", {
+            "x1": barX,
+            "y1": 30 + barY,
+            "x2": barX,
+            "y2": 110 + barY
+          })))));
+        }
+        return _results;
+      })(), (function() {
+        var _len8, _r, _results;
+        _results = [];
+        for (i = _r = 0, _len8 = currentSection.length; _r < _len8; i = ++_r) {
+          note = currentSection[i];
+          pitch = this.analyser.pitch(note[0]);
+          duration = this.analyser.duration(note[1]);
           comp = React.createElement(Jianpu.Note, {
-            "key": j,
+            "key": i,
             "note": note,
             "x": x,
             "y": y,
             "pitch": pitch,
             "duration": duration
           });
-          x += this.analyser.estimateXSpan(note, section[j + 1]);
+          x += this.analyser.estimateXSpan(note, section[i + 1]);
           _results.push(comp);
         }
         return _results;
-      }).call(this), (function() {
-        var _k, _len2, _results;
-        _results = [];
-        for (j = _k = 0, _len2 = slurs.length; _k < _len2; j = ++_k) {
-          slur = slurs[j];
-          x1 = slur[0];
-          y1 = slur[1];
-          x2 = slur[2];
-          y2 = slur[3];
-          _results.push(React.createElement("path", {
-            "key": "" + i + "," + j,
-            "className": "slur",
-            "d": "M" + x1 + "," + y1 + " C" + (x1 + 20) + "," + (y1 - 20) + " " + (x2 - 20) + "," + (y2 - 20) + " " + x2 + "," + y2
-          }));
-        }
-        return _results;
-      })(), React.createElement("line", {
-        "className": "bar-line",
-        "x1": 10 + x,
-        "y1": 30 + y,
-        "x2": 10 + x,
-        "y2": 110 + y
-      })));
-      x += 20;
-      slurs = [];
+      }).call(this));
     }
-    return React.createElement("svg", {
-      "width": width,
-      "height": height
-    }, comps, (function() {
-      var _k, _len2, _results;
-      _results = [];
-      for (i = _k = 0, _len2 = currentSection.length; _k < _len2; i = ++_k) {
-        note = currentSection[i];
-        pitch = this.analyser.pitch(note[0]);
-        duration = this.analyser.duration(note[1]);
-        comp = React.createElement(Jianpu.Note, {
-          "key": i,
-          "note": note,
-          "x": x,
-          "y": y,
-          "pitch": pitch,
-          "duration": duration
-        });
-        x += this.analyser.estimateXSpan(note, section[i + 1]);
-        _results.push(comp);
-      }
-      return _results;
-    }).call(this));
   }
 });
 
