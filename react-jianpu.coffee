@@ -96,7 +96,7 @@ Jianpu = React.createClass
 
     analyser:
         pitch: (pitch) ->
-            if pitch is rest
+            if pitch.base is rest
                 nOctaves: 0
                 number: 0
                 accidental: 0
@@ -209,7 +209,7 @@ Jianpu = React.createClass
 
     render: ->
         {song} = @state
-        {width, height, sectionsPerLine, alignSections} = @props
+        {width, height, sectionsPerLine, alignSections, highlight} = @props
 
         heightPerLine = 200
         marginBottom = 150
@@ -333,7 +333,14 @@ Jianpu = React.createClass
                         {
                             for noteInfo, j in notes
                                 {note, pitch, duration} = noteInfo
-                                <Jianpu.Note key={j} note={note} x={noteInfo.x} y={noteInfo.y} pitch={pitch} duration={duration}/>
+                                <Jianpu.Note key={j}
+                                    note={note}
+                                    x={noteInfo.x}
+                                    y={noteInfo.y}
+                                    pitch={pitch}
+                                    duration={duration}
+                                    highlight={highlight is note}
+                                />
                         }
                         {
                             for slur, j in slurs
@@ -371,7 +378,7 @@ Jianpu = React.createClass
 Jianpu.Note = React.createClass
 
     render: ->
-        {note, x, y, pitch, duration} = @props
+        {note, x, y, pitch, duration, highlight} = @props
         {nOctaves, number, accidental} = pitch
         {main, nDashes, nDots} = duration
         lyrics = note.lyrics
@@ -390,14 +397,21 @@ Jianpu.Note = React.createClass
                 when -1
                     "♭"
                 when 0
-                    ""
+                    null
                 when 1
                     "♯"
                 when 2
                     "♯♯"
         <g transform={"translate(#{x}, #{y})"}>
-            <text className="accidental" x={-5} y={80}>{accidentalText}</text>
-            <text className="note" x={10} y={85}>{ + number}</text>
+            {
+                if highlight
+                    <rect className="highlight" x={5} y={20} width={40 + 40 * nDashes + 10 * nDots} height={100} />
+            }
+            {
+                if accidentalText
+                    <text className="accidental" x={-5} y={80}>{accidentalText}</text>
+            }
+            <text className="note" x={10} y={85}>{number}</text>
             {
                 if nOctaves > 0
                     for i in [0...nOctaves] by 1

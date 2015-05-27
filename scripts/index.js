@@ -186,8 +186,60 @@ App = React.createClass({
           left: "1",
           right: "C"
         }
-      }
+      },
+      isPlaying: null,
+      volume: 0.3
     };
+  },
+  playingOscillator: null,
+  playNotes: function(notes) {
+    var context, gainCtrl, i, osc, playHelper;
+    context = (this.audiocontext || (this.audiocontext = new AudioContext()));
+    gainCtrl = context.createGain();
+    gainCtrl.gain.value = this.state.volume;
+    gainCtrl.connect(context.destination);
+    osc = context.createOscillator();
+    osc.connect(gainCtrl);
+    osc.frequency.value = 0;
+    osc.start();
+    this.playingOscillator = osc;
+    i = 0;
+    playHelper = (function(_this) {
+      return function() {
+        var diff, duration, freq, note, pitch;
+        if (i >= notes.length || _this.shouldStop) {
+          _this.shouldStop = false;
+          osc.stop();
+          _this.playingOscillator = null;
+          return _this.setState({
+            isPlaying: null
+          });
+        } else {
+          note = notes[i];
+          pitch = note.pitch, duration = note.duration;
+          _this.setState({
+            isPlaying: note
+          });
+          if (pitch.base > 0) {
+            diff = pitch.base + pitch.accidental - a4;
+            freq = 440 * Math.pow(2, diff / 12);
+            osc.frequency.value = freq;
+          } else {
+            osc.frequency.value = 0;
+          }
+          setTimeout(function() {
+            return playHelper();
+          }, duration / 8 * 400);
+          return i++;
+        }
+      };
+    })(this);
+    return playHelper();
+  },
+  shouldStop: false,
+  stopPlaying: function() {
+    this.shouldStop = true;
+    return this.playingOscillator.stop();
   },
   onClick: function(e) {
     var melody, song;
@@ -249,8 +301,8 @@ App = React.createClass({
     });
   },
   render: function() {
-    var alignSections, brand, melody, rawTime, sectionsPerLine, song, _ref;
-    _ref = this.state, song = _ref.song, melody = _ref.melody, alignSections = _ref.alignSections, rawTime = _ref.rawTime, sectionsPerLine = _ref.sectionsPerLine;
+    var alignSections, brand, isPlaying, melody, rawTime, sectionsPerLine, song, volume, _ref;
+    _ref = this.state, song = _ref.song, melody = _ref.melody, alignSections = _ref.alignSections, rawTime = _ref.rawTime, sectionsPerLine = _ref.sectionsPerLine, isPlaying = _ref.isPlaying, volume = _ref.volume;
     brand = React.createElement("a", {
       "href": "https://github.com/felixhao28/react-jianpu",
       "className": "logo"
@@ -260,7 +312,13 @@ App = React.createClass({
     }, React.createElement(Nav, null, React.createElement(NavItem, {
       "href": "#",
       "onClick": this.onClick
-    }, "Refresh"))), React.createElement(Grid, {
+    }, "Refresh"), (isPlaying ? React.createElement(NavItem, {
+      "href": "#",
+      "onClick": this.stopPlaying
+    }, "Stop") : React.createElement(NavItem, {
+      "href": "#",
+      "onClick": this.playNotes.bind(this, song.melody)
+    }, "Play")))), React.createElement(Grid, {
       "fluid": true
     }, React.createElement(Row, null, React.createElement(Col, {
       "md": 8.
@@ -305,7 +363,8 @@ App = React.createClass({
     }, React.createElement(Jianpu, {
       "song": song,
       "sectionsPerLine": sectionsPerLine,
-      "alignSections": alignSections
+      "alignSections": alignSections,
+      "highlight": isPlaying
     })));
   }
 });

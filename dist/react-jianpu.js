@@ -150,7 +150,7 @@ Jianpu = React.createClass({
   analyser: {
     pitch: function(pitch) {
       var diff, unitPitch;
-      if (pitch === rest) {
+      if (pitch.base === rest) {
         return {
           nOctaves: 0,
           number: 0,
@@ -300,9 +300,9 @@ Jianpu = React.createClass({
     }
   },
   render: function() {
-    var alignSections, barX, barY, comp, computedNotes, computedSections, currentSection, delta, duration, height, heightPerLine, i, j, lastWidth, marginBottom, nLines, nSectionsThisLine, newWidth, newstartX, newx, note, noteInfo, notes, offset, pitch, section, sectionLength, sectionOffsets, sectionPadding, sectionWidth, sections, sectionsPerLine, slur, slurEndX, slurEndY, slurX, slurY, slurs, song, startX, startY, width, x, x1, x2, xSpan, y, y1, y2, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _len7, _len8, _m, _n, _o, _p, _q, _r, _ref, _ref1, _ref2, _ref3, _ref4;
+    var alignSections, barX, barY, comp, computedNotes, computedSections, currentSection, delta, duration, height, heightPerLine, highlight, i, j, lastWidth, marginBottom, nLines, nSectionsThisLine, newWidth, newstartX, newx, note, noteInfo, notes, offset, pitch, section, sectionLength, sectionOffsets, sectionPadding, sectionWidth, sections, sectionsPerLine, slur, slurEndX, slurEndY, slurX, slurY, slurs, song, startX, startY, width, x, x1, x2, xSpan, y, y1, y2, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _len7, _len8, _m, _n, _o, _p, _q, _r, _ref, _ref1, _ref2, _ref3, _ref4;
     song = this.state.song;
-    _ref = this.props, width = _ref.width, height = _ref.height, sectionsPerLine = _ref.sectionsPerLine, alignSections = _ref.alignSections;
+    _ref = this.props, width = _ref.width, height = _ref.height, sectionsPerLine = _ref.sectionsPerLine, alignSections = _ref.alignSections, highlight = _ref.highlight;
     heightPerLine = 200;
     marginBottom = 150;
     sectionPadding = 20;
@@ -471,7 +471,8 @@ Jianpu = React.createClass({
                 "x": noteInfo.x,
                 "y": noteInfo.y,
                 "pitch": pitch,
-                "duration": duration
+                "duration": duration,
+                "highlight": highlight === note
               }));
             }
             return _results1;
@@ -539,8 +540,8 @@ Jianpu = React.createClass({
 
 Jianpu.Note = React.createClass({
   render: function() {
-    var accidental, accidentalText, duration, i, lyrics, main, nDashes, nDots, nOctaves, nUnderDashes, note, number, pitch, x, y, _ref;
-    _ref = this.props, note = _ref.note, x = _ref.x, y = _ref.y, pitch = _ref.pitch, duration = _ref.duration;
+    var accidental, accidentalText, duration, highlight, i, lyrics, main, nDashes, nDots, nOctaves, nUnderDashes, note, number, pitch, x, y, _ref;
+    _ref = this.props, note = _ref.note, x = _ref.x, y = _ref.y, pitch = _ref.pitch, duration = _ref.duration, highlight = _ref.highlight;
     nOctaves = pitch.nOctaves, number = pitch.number, accidental = pitch.accidental;
     main = duration.main, nDashes = duration.nDashes, nDots = duration.nDots;
     lyrics = note.lyrics;
@@ -563,7 +564,7 @@ Jianpu.Note = React.createClass({
         case -1:
           return "♭";
         case 0:
-          return "";
+          return null;
         case 1:
           return "♯";
         case 2:
@@ -572,15 +573,21 @@ Jianpu.Note = React.createClass({
     })();
     return React.createElement("g", {
       "transform": "translate(" + x + ", " + y + ")"
-    }, React.createElement("text", {
+    }, (highlight ? React.createElement("rect", {
+      "className": "highlight",
+      "x": 5.,
+      "y": 20.,
+      "width": 40 + 40 * nDashes + 10 * nDots,
+      "height": 100.
+    }) : void 0), (accidentalText ? React.createElement("text", {
       "className": "accidental",
       "x": -5.,
       "y": 80.
-    }, accidentalText), React.createElement("text", {
+    }, accidentalText) : void 0), React.createElement("text", {
       "className": "note",
       "x": 10.,
       "y": 85.
-    }, +number), ((function() {
+    }, number), ((function() {
       var _i, _j, _results, _results1;
       if (nOctaves > 0) {
         _results = [];

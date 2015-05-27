@@ -143,6 +143,49 @@ App = React.createClass
             key:
                 left: "1"
                 right: "C"
+        isPlaying: null
+        volume: 0.3
+
+    playingOscillator: null
+    playNotes: (notes) ->
+        context = (@audiocontext or= new AudioContext())
+        gainCtrl = context.createGain()
+        gainCtrl.gain.value = @state.volume
+        gainCtrl.connect(context.destination)
+        osc = context.createOscillator()
+        osc.connect(gainCtrl)
+        osc.frequency.value = 0
+        osc.start()
+        @playingOscillator = osc
+        i = 0
+        playHelper = =>
+            if i >= notes.length or @shouldStop
+                @shouldStop = false
+                osc.stop()
+                @playingOscillator = null
+                @setState
+                    isPlaying: null
+            else
+                note = notes[i]
+                {pitch, duration} = note
+                @setState
+                    isPlaying: note
+                if pitch.base > 0
+                    diff = pitch.base + pitch.accidental - a4
+                    freq = 440 * Math.pow(2, diff / 12)
+                    osc.frequency.value = freq
+                else
+                    osc.frequency.value = 0
+                setTimeout =>
+                        playHelper()
+                    , duration / 8 * 400
+                i++
+        playHelper()
+
+    shouldStop: false
+    stopPlaying: ->
+        @shouldStop = true
+        @playingOscillator.stop()
 
     onClick: (e) ->
         {song} = @state
@@ -189,7 +232,7 @@ App = React.createClass
             sectionsPerLine: parseInt(e.target.value)
 
     render: ->
-        {song, melody, alignSections, rawTime, sectionsPerLine} = @state
+        {song, melody, alignSections, rawTime, sectionsPerLine, isPlaying, volume} = @state
         
         brand =
             <a href="https://github.com/felixhao28/react-jianpu" className="logo">
@@ -199,6 +242,12 @@ App = React.createClass
             <Navbar brand={brand}>
                 <Nav>
                     <NavItem href="#" onClick={@onClick}>Refresh</NavItem>
+                    {
+                        if isPlaying
+                            <NavItem href="#" onClick={@stopPlaying}>Stop</NavItem>
+                        else
+                            <NavItem href="#" onClick={@playNotes.bind(this, song.melody)}>Play</NavItem>
+                    }
                 </Nav>
             </Navbar>
             <Grid fluid>
@@ -215,7 +264,12 @@ App = React.createClass
                 </Row>
             </Grid>
             <Panel header="Preview">
-                <Jianpu song={song} sectionsPerLine={sectionsPerLine} alignSections={alignSections}/>
+                <Jianpu
+                    song={song}
+                    sectionsPerLine={sectionsPerLine}
+                    alignSections={alignSections}
+                    highlight={isPlaying}
+                />
             </Panel>
         </div>
 

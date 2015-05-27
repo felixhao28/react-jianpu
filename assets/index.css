@@ -57,3 +57,7 @@
 .accidental {
     font-size: 30px;
 }
+
+.highlight {
+    fill: green;
+}
