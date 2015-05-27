@@ -137,7 +137,6 @@ Jianpu = React.createClass({
   },
   getInitialState: function() {
     return {
-      sectionLength: 32,
       song: null
     };
   },
@@ -145,8 +144,7 @@ Jianpu = React.createClass({
     var song;
     song = this.props.song;
     return this.setState({
-      song: song,
-      sectionLength: parseFloat(song.time.upper) * 32 / parseFloat(song.time.lower)
+      song: song
     });
   },
   analyser: {
@@ -159,12 +157,12 @@ Jianpu = React.createClass({
           accidental: 0
         };
       } else {
-        diff = pitch - c4;
+        diff = pitch.base - c4;
         unitPitch = __modulo(diff, 12);
         return {
           nOctaves: Math.floor(diff / 12),
           number: notesMap[unitPitch].number,
-          accidental: notesMap[unitPitch].accidental
+          accidental: pitch.accidental
         };
       }
     },
@@ -302,21 +300,22 @@ Jianpu = React.createClass({
     }
   },
   render: function() {
-    var alignSections, barX, barY, comp, computedNotes, computedSections, currentSection, delta, duration, height, heightPerLine, i, j, lastWidth, marginBottom, nLines, nSectionsThisLine, newWidth, newstartX, newx, note, noteInfo, notes, offset, pitch, section, sectionLength, sectionOffsets, sectionPadding, sectionWidth, sections, sectionsPerLine, slur, slurEndX, slurEndY, slurX, slurY, slurs, song, startX, startY, width, x, x1, x2, xSpan, y, y1, y2, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _len7, _len8, _m, _n, _o, _p, _q, _r, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
-    _ref = this.state, sectionLength = _ref.sectionLength, song = _ref.song;
-    _ref1 = this.props, width = _ref1.width, height = _ref1.height, sectionsPerLine = _ref1.sectionsPerLine, alignSections = _ref1.alignSections;
+    var alignSections, barX, barY, comp, computedNotes, computedSections, currentSection, delta, duration, height, heightPerLine, i, j, lastWidth, marginBottom, nLines, nSectionsThisLine, newWidth, newstartX, newx, note, noteInfo, notes, offset, pitch, section, sectionLength, sectionOffsets, sectionPadding, sectionWidth, sections, sectionsPerLine, slur, slurEndX, slurEndY, slurX, slurY, slurs, song, startX, startY, width, x, x1, x2, xSpan, y, y1, y2, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _len7, _len8, _m, _n, _o, _p, _q, _r, _ref, _ref1, _ref2, _ref3, _ref4;
+    song = this.state.song;
+    _ref = this.props, width = _ref.width, height = _ref.height, sectionsPerLine = _ref.sectionsPerLine, alignSections = _ref.alignSections;
     heightPerLine = 200;
     marginBottom = 150;
     sectionPadding = 20;
     if (song == null) {
       return React.createElement("div", null);
     } else {
+      sectionLength = parseFloat(song.time.upper) * 32 / parseFloat(song.time.lower);
       offset = 0;
       sections = [];
       currentSection = [];
-      _ref2 = song.melody;
-      for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
-        note = _ref2[_i];
+      _ref1 = song.melody;
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        note = _ref1[_i];
         duration = note.duration;
         offset += duration;
         currentSection.push(note);
@@ -380,7 +379,7 @@ Jianpu = React.createClass({
           nSectionsThisLine = (nSectionsThisLine + 1) % sectionsPerLine;
         }
         sectionOffsets = [0];
-        for (i = _m = 0, _ref3 = sectionWidth.length; _m < _ref3; i = _m += 1) {
+        for (i = _m = 0, _ref2 = sectionWidth.length; _m < _ref2; i = _m += 1) {
           sectionOffsets[i + 1] = sectionOffsets[i] + sectionWidth[i];
         }
         nSectionsThisLine = 0;
@@ -390,9 +389,9 @@ Jianpu = React.createClass({
           newstartX = sectionOffsets[nSectionsThisLine];
           newx = sectionOffsets[nSectionsThisLine + 1];
           delta = (newx - newstartX - xSpan) / section.notes.length;
-          _ref4 = section.notes;
-          for (i = _o = 0, _len5 = _ref4.length; _o < _len5; i = ++_o) {
-            noteInfo = _ref4[i];
+          _ref3 = section.notes;
+          for (i = _o = 0, _len5 = _ref3.length; _o < _len5; i = ++_o) {
+            noteInfo = _ref3[i];
             noteInfo.x = (noteInfo.x - section.startX) + delta * (i + 1) + newstartX;
           }
           section.startX = newstartX;
@@ -403,9 +402,9 @@ Jianpu = React.createClass({
       for (_p = 0, _len6 = computedSections.length; _p < _len6; _p++) {
         section = computedSections[_p];
         section.slurs = [];
-        _ref5 = section.notes;
-        for (_q = 0, _len7 = _ref5.length; _q < _len7; _q++) {
-          noteInfo = _ref5[_q];
+        _ref4 = section.notes;
+        for (_q = 0, _len7 = _ref4.length; _q < _len7; _q++) {
+          noteInfo = _ref4[_q];
           if (noteInfo.note.options != null) {
             slur = noteInfo.note.options.slur;
             if (slur === "start") {
@@ -426,10 +425,11 @@ Jianpu = React.createClass({
         for (_r = 0, _len8 = computedSections.length; _r < _len8; _r++) {
           section = computedSections[_r];
           lastWidth += section.x - section.startX;
-          nSectionsThisLine = (nSectionsThisLine + 1) % sectionsPerLine;
-          if (nSectionsThisLine === 1 && width < lastWidth) {
+          nSectionsThisLine = nSectionsThisLine + 1;
+          if (nSectionsThisLine === sectionsPerLine && width < lastWidth) {
             width = lastWidth;
             lastWidth = 0;
+            nSectionsThisLine = 0;
           }
         }
         if (nSectionsThisLine < sectionsPerLine - 1 && currentSection.length > 0) {
@@ -494,14 +494,14 @@ Jianpu = React.createClass({
           })(), (barX = section.x, barY = section.y, i === sections.length - 1 && currentSection.length === 0 ? React.createElement("g", {
             "className": "doublebar-line"
           }, React.createElement("line", {
+            "x1": barX - 7,
+            "y1": 30 + barY,
+            "x2": barX - 7,
+            "y2": 110 + barY
+          }), React.createElement("line", {
             "x1": barX,
             "y1": 30 + barY,
             "x2": barX,
-            "y2": 110 + barY
-          }), React.createElement("line", {
-            "x1": 5 + barX,
-            "y1": 30 + barY,
-            "x2": 5 + barX,
             "y2": 110 + barY
           })) : React.createElement("g", {
             "className": "bar-line"
@@ -539,7 +539,7 @@ Jianpu = React.createClass({
 
 Jianpu.Note = React.createClass({
   render: function() {
-    var accidental, duration, i, lyrics, main, nDashes, nDots, nOctaves, nUnderDashes, note, number, pitch, x, y, _ref;
+    var accidental, accidentalText, duration, i, lyrics, main, nDashes, nDots, nOctaves, nUnderDashes, note, number, pitch, x, y, _ref;
     _ref = this.props, note = _ref.note, x = _ref.x, y = _ref.y, pitch = _ref.pitch, duration = _ref.duration;
     nOctaves = pitch.nOctaves, number = pitch.number, accidental = pitch.accidental;
     main = duration.main, nDashes = duration.nDashes, nDots = duration.nDots;
@@ -556,13 +556,31 @@ Jianpu.Note = React.createClass({
           return 0;
       }
     })();
+    accidentalText = (function() {
+      switch (accidental) {
+        case -2:
+          return "♭♭";
+        case -1:
+          return "♭";
+        case 0:
+          return "";
+        case 1:
+          return "♯";
+        case 2:
+          return "♯♯";
+      }
+    })();
     return React.createElement("g", {
       "transform": "translate(" + x + ", " + y + ")"
     }, React.createElement("text", {
+      "className": "accidental",
+      "x": -5.,
+      "y": 80.
+    }, accidentalText), React.createElement("text", {
       "className": "note",
       "x": 10.,
       "y": 85.
-    }, number), ((function() {
+    }, +number), ((function() {
       var _i, _j, _results, _results1;
       if (nOctaves > 0) {
         _results = [];

@@ -87,14 +87,12 @@ Jianpu = React.createClass
         alignSections: false
 
     getInitialState: ->
-        sectionLength: 32
         song: null
 
     componentDidMount: ->
         {song} = @props
         @setState
             song: song
-            sectionLength: parseFloat(song.time.upper) * 32 / parseFloat(song.time.lower)
 
     analyser:
         pitch: (pitch) ->
@@ -103,12 +101,12 @@ Jianpu = React.createClass
                 number: 0
                 accidental: 0
             else
-                diff = pitch - c4
+                diff = pitch.base - c4
                 unitPitch = diff %% 12
 
                 nOctaves: Math.floor(diff / 12)
                 number: notesMap[unitPitch].number
-                accidental: notesMap[unitPitch].accidental
+                accidental: pitch.accidental
 
         duration: (duration) ->
             nCrotchets = Math.floor(duration / 8)
@@ -210,7 +208,7 @@ Jianpu = React.createClass
                 offset + 20
 
     render: ->
-        {sectionLength, song} = @state
+        {song} = @state
         {width, height, sectionsPerLine, alignSections} = @props
 
         heightPerLine = 200
@@ -220,6 +218,7 @@ Jianpu = React.createClass
         if not song?
             <div />
         else
+            sectionLength = parseFloat(song.time.upper) * 32 / parseFloat(song.time.lower)
             offset = 0
             sections = []
             currentSection = []
@@ -310,10 +309,11 @@ Jianpu = React.createClass
                 lastWidth = 0
                 for section in computedSections
                     lastWidth += section.x - section.startX
-                    nSectionsThisLine = (nSectionsThisLine + 1) % sectionsPerLine
-                    if nSectionsThisLine is 1 and width < lastWidth
+                    nSectionsThisLine = nSectionsThisLine + 1
+                    if nSectionsThisLine is sectionsPerLine and width < lastWidth
                         width = lastWidth
                         lastWidth = 0
+                        nSectionsThisLine = 0
                 if nSectionsThisLine < sectionsPerLine - 1 and currentSection.length > 0
                     lastWidth += @analyser.estimateSectionXSpan(currentSection)
                     if width < lastWidth
@@ -348,8 +348,8 @@ Jianpu = React.createClass
                             barY = section.y
                             if i is sections.length - 1 and currentSection.length is 0
                                 <g className="doublebar-line">
+                                    <line x1={barX - 7} y1={30 + barY} x2={barX - 7} y2={110 + barY} />
                                     <line x1={barX} y1={30 + barY} x2={barX} y2={110 + barY} />
-                                    <line x1={5 + barX} y1={30 + barY} x2={5 + barX} y2={110 + barY} />
                                 </g>
                             else
                                 <g className="bar-line">
@@ -382,9 +382,22 @@ Jianpu.Note = React.createClass
                 when 2 then 2
                 when 1 then 3
                 else 0
-           
+        
+        accidentalText =
+            switch accidental
+                when -2
+                    "♭♭"
+                when -1
+                    "♭"
+                when 0
+                    ""
+                when 1
+                    "♯"
+                when 2
+                    "♯♯"
         <g transform={"translate(#{x}, #{y})"}>
-            <text className="note" x={10} y={85}>{number}</text>
+            <text className="accidental" x={-5} y={80}>{accidentalText}</text>
+            <text className="note" x={10} y={85}>{ + number}</text>
             {
                 if nOctaves > 0
                     for i in [0...nOctaves] by 1

@@ -33,9 +33,14 @@
     stroke-width: 2.5;
 }
 
-.doublebar-line {
+.doublebar-line > line:first-child {
     stroke: rgb(0,0,0);
     stroke-width: 2.5;
+}
+
+.doublebar-line > line:last-child {
+    stroke: rgb(0,0,0);
+    stroke-width: 5;
 }
 
 .slur {
@@ -47,4 +52,8 @@
 .lyrics {
     font: "Arial";
     font-size: 20px;
+}
+
+.accidental {
+    font-size: 30px;
 }

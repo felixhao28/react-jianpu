@@ -36,12 +36,17 @@ parse = function(m) {
     for (i = _l = 0, _len3 = main.length; _l < _len3; i = ++_l) {
       c = main[i];
       if (i === main.length - 1 || pitch !== null && (isNum[c] || noteDelims[c])) {
-        if (i === main.length - 1 && lyrics.exists) {
-          lyrics.content += lyricsLine.substr(i);
+        if (lyrics.exists) {
+          if (i === main.length - 1) {
+            lyrics.content += lyricsLine.substr(i);
+          }
+          lyrics.content.trim();
         }
-        lyrics.content.trim();
         notes.push({
-          pitch: pitch + accidental,
+          pitch: {
+            base: pitch,
+            accidental: accidental
+          },
           duration: duration + extraDuration,
           options: options,
           lyrics: lyrics

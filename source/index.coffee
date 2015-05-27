@@ -22,11 +22,14 @@ parse = (m) ->
         lastLyricsChar = undefined
         for c, i in main
             if i is main.length - 1 or pitch isnt null and (isNum[c] or noteDelims[c])
-                if i is main.length - 1 and lyrics.exists
-                    lyrics.content += lyricsLine.substr(i)
-                lyrics.content.trim()
+                if lyrics.exists
+                    if i is main.length - 1
+                        lyrics.content += lyricsLine.substr(i)
+                    lyrics.content.trim()
                 notes.push
-                    pitch: pitch + accidental
+                    pitch:
+                        base: pitch
+                        accidental: accidental
                     duration: duration + extraDuration
                     options: options
                     lyrics: lyrics
