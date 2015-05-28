@@ -134,6 +134,7 @@ App = React.createClass
         alignSections: true
         melody: rowyourboat
         rawTime: "3/4"
+        rawKey: "1=C"
         sectionsPerLine: 4
         song:
             melody: parse(rowyourboat)
@@ -160,17 +161,25 @@ App = React.createClass
                 {pitch, duration} = note
                 @setState
                     isPlaying: note
-                {volume, bpm, instrument} = @state
+                {bpm, instrument, song} = @state
                 crotchetDuration = 60 / bpm
                 if pitch.base > 0
-                    diff = pitch.base + pitch.accidental - c4
+                    m = song.key.right.match(/(#|b)?([A-G])/)
+                    if m[1] is "#"
+                        base = 1
+                    else if m[1] is "b"
+                        base = -1
+                    else
+                        base = 0
+                    number = (m[2].charCodeAt(0) - 60) % 7 + 1
+                    base += numberMap[number]
+                    diff = base + pitch.base + pitch.accidental - c4
                     unitPitch = diff %% 12
                     n = notesMap[unitPitch]
                     noteStr = String.fromCharCode(65 + (n.number + 1) % 7)
                     if n.accidental is 1
                         noteStr += "#"
                     nOctaves = Math.floor(diff / 12) + 4
-                    Synth.setVolume(volume / 100)
                     Synth.play(instrument, noteStr, nOctaves, duration / 8 * crotchetDuration)
                 setTimeout(playHelper, duration / 8 * crotchetDuration * 1000)
                 i++
@@ -193,10 +202,22 @@ App = React.createClass
             alignSections: e.target.checked
 
     onChangeKey: (e) ->
-        @state.song.key.right = e.target.value
+        rawKey = e.target.value
         @setState
-            song: @state.song
+            rawKey: rawKey
+        if key = @parseKey(rawKey)
+            @state.song.key = key
+            @setState
+                song: @state.song
     
+    parseKey: (key) ->
+        m = key.match /^([1-7])=((?:#|b)?[A-G])$/
+        if m?
+            left: m[1]
+            right: m[2]
+        else
+            null
+
     onChangeTime: (e) ->
         rawTime = e.target.value
         @setState
@@ -225,6 +246,7 @@ App = React.createClass
             sectionsPerLine: parseInt(e.target.value)
 
     onChangeVolume: (v) ->
+        Synth.setVolume(v / 100)
         @setState
             volume: v
 
@@ -245,7 +267,7 @@ App = React.createClass
         Synth.play(instrument, "C", 4, crotchetDuration * 2)
 
     render: ->
-        {song, melody, alignSections, rawTime, sectionsPerLine, isPlaying, volume, bpm, instrument} = @state
+        {song, melody, alignSections, rawTime, sectionsPerLine, isPlaying, volume, bpm, instrument, rawKey} = @state
         
         brand =
             <a href="https://github.com/felixhao28/react-jianpu" className="logo">
@@ -271,7 +293,7 @@ App = React.createClass
                     <Col md={4}>
                         <PanelGroup defaultActiveKey="1" accordion>
                         <Panel header="General" eventKey="1">
-                            <Input type="text" label="Key" placeholder="1=C" addonBefore="1=" value={song.key.right} onChange={@onChangeKey} />
+                            <Input type="text" label="Key" placeholder="1=C" value={rawKey} onChange={@onChangeKey} bsStyle={if not @parseKey(rawKey)? then "error"}/>
                             <Input type="text" label="Time" placeholder="4/4" value={rawTime} onChange={@onChangeTime} bsStyle={if not @validateTime(rawTime) then "error"}/>
                             <Input type="checkbox" label="Align Sections" onChange={@onChangeAlign} checked={alignSections}/>
                             <Input type="number" label="Sections per line" placeholder="4" value={sectionsPerLine} onChange={@onChangeSPL}/>

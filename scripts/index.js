@@ -176,6 +176,7 @@ App = React.createClass({
       alignSections: true,
       melody: rowyourboat,
       rawTime: "3/4",
+      rawKey: "1=C",
       sectionsPerLine: 4,
       song: {
         melody: parse(rowyourboat),
@@ -199,7 +200,7 @@ App = React.createClass({
     i = 0;
     playHelper = (function(_this) {
       return function() {
-        var bpm, crotchetDuration, diff, duration, instrument, n, nOctaves, note, noteStr, pitch, unitPitch, volume, _ref;
+        var base, bpm, crotchetDuration, diff, duration, instrument, m, n, nOctaves, note, noteStr, number, pitch, song, unitPitch, _ref;
         if (i >= notes.length || _this.shouldStop) {
           _this.shouldStop = false;
           return _this.setState({
@@ -211,10 +212,20 @@ App = React.createClass({
           _this.setState({
             isPlaying: note
           });
-          _ref = _this.state, volume = _ref.volume, bpm = _ref.bpm, instrument = _ref.instrument;
+          _ref = _this.state, bpm = _ref.bpm, instrument = _ref.instrument, song = _ref.song;
           crotchetDuration = 60 / bpm;
           if (pitch.base > 0) {
-            diff = pitch.base + pitch.accidental - c4;
+            m = song.key.right.match(/(#|b)?([A-G])/);
+            if (m[1] === "#") {
+              base = 1;
+            } else if (m[1] === "b") {
+              base = -1;
+            } else {
+              base = 0;
+            }
+            number = (m[2].charCodeAt(0) - 60) % 7 + 1;
+            base += numberMap[number];
+            diff = base + pitch.base + pitch.accidental - c4;
             unitPitch = __modulo(diff, 12);
             n = notesMap[unitPitch];
             noteStr = String.fromCharCode(65 + (n.number + 1) % 7);
@@ -222,7 +233,6 @@ App = React.createClass({
               noteStr += "#";
             }
             nOctaves = Math.floor(diff / 12) + 4;
-            Synth.setVolume(volume / 100);
             Synth.play(instrument, noteStr, nOctaves, duration / 8 * crotchetDuration);
           }
           setTimeout(playHelper, duration / 8 * crotchetDuration * 1000);
@@ -251,10 +261,29 @@ App = React.createClass({
     });
   },
   onChangeKey: function(e) {
-    this.state.song.key.right = e.target.value;
-    return this.setState({
-      song: this.state.song
+    var key, rawKey;
+    rawKey = e.target.value;
+    this.setState({
+      rawKey: rawKey
     });
+    if (key = this.parseKey(rawKey)) {
+      this.state.song.key = key;
+      return this.setState({
+        song: this.state.song
+      });
+    }
+  },
+  parseKey: function(key) {
+    var m;
+    m = key.match(/^([1-7])=((?:#|b)?[A-G])$/);
+    if (m != null) {
+      return {
+        left: m[1],
+        right: m[2]
+      };
+    } else {
+      return null;
+    }
   },
   onChangeTime: function(e) {
     var rawTime, time;
@@ -296,6 +325,7 @@ App = React.createClass({
     });
   },
   onChangeVolume: function(v) {
+    Synth.setVolume(v / 100);
     return this.setState({
       volume: v
     });
@@ -319,8 +349,8 @@ App = React.createClass({
     return Synth.play(instrument, "C", 4, crotchetDuration * 2);
   },
   render: function() {
-    var alignSections, bpm, brand, instr, instrument, isPlaying, melody, rawTime, sectionsPerLine, song, volume, _ref;
-    _ref = this.state, song = _ref.song, melody = _ref.melody, alignSections = _ref.alignSections, rawTime = _ref.rawTime, sectionsPerLine = _ref.sectionsPerLine, isPlaying = _ref.isPlaying, volume = _ref.volume, bpm = _ref.bpm, instrument = _ref.instrument;
+    var alignSections, bpm, brand, instr, instrument, isPlaying, melody, rawKey, rawTime, sectionsPerLine, song, volume, _ref;
+    _ref = this.state, song = _ref.song, melody = _ref.melody, alignSections = _ref.alignSections, rawTime = _ref.rawTime, sectionsPerLine = _ref.sectionsPerLine, isPlaying = _ref.isPlaying, volume = _ref.volume, bpm = _ref.bpm, instrument = _ref.instrument, rawKey = _ref.rawKey;
     brand = React.createElement("a", {
       "href": "https://github.com/felixhao28/react-jianpu",
       "className": "logo"
@@ -359,9 +389,9 @@ App = React.createClass({
       "type": "text",
       "label": "Key",
       "placeholder": "1=C",
-      "addonBefore": "1=",
-      "value": song.key.right,
-      "onChange": this.onChangeKey
+      "value": rawKey,
+      "onChange": this.onChangeKey,
+      "bsStyle": (this.parseKey(rawKey) == null ? "error" : void 0)
     }), React.createElement(Input, {
       "type": "text",
       "label": "Time",
