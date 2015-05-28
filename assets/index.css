@@ -6,6 +6,10 @@
     font-family: "Lucida Console", Monaco, monospace;
 }
 
+.form-group .btn-group {
+    margin-left: 20px;
+}
+
 .note {
     font-size: 40px;
 }

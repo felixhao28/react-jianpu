@@ -144,25 +144,15 @@ App = React.createClass
                 left: "1"
                 right: "C"
         isPlaying: null
-        volume: 0.3
+        volume: 30
+        bpm: 120
+        instrument: "piano"
 
-    playingOscillator: null
     playNotes: (notes) ->
-        context = (@audiocontext or= new AudioContext())
-        gainCtrl = context.createGain()
-        gainCtrl.gain.value = @state.volume
-        gainCtrl.connect(context.destination)
-        osc = context.createOscillator()
-        osc.connect(gainCtrl)
-        osc.frequency.value = 0
-        osc.start()
-        @playingOscillator = osc
         i = 0
         playHelper = =>
             if i >= notes.length or @shouldStop
                 @shouldStop = false
-                osc.stop()
-                @playingOscillator = null
                 @setState
                     isPlaying: null
             else
@@ -170,22 +160,25 @@ App = React.createClass
                 {pitch, duration} = note
                 @setState
                     isPlaying: note
+                {volume, bpm, instrument} = @state
+                crotchetDuration = 60 / bpm
                 if pitch.base > 0
-                    diff = pitch.base + pitch.accidental - a4
-                    freq = 440 * Math.pow(2, diff / 12)
-                    osc.frequency.value = freq
-                else
-                    osc.frequency.value = 0
-                setTimeout =>
-                        playHelper()
-                    , duration / 8 * 400
+                    diff = pitch.base + pitch.accidental - c4
+                    unitPitch = diff %% 12
+                    n = notesMap[unitPitch]
+                    noteStr = String.fromCharCode(65 + (n.number + 1) % 7)
+                    if n.accidental is 1
+                        noteStr += "#"
+                    nOctaves = Math.floor(diff / 12) + 4
+                    Synth.setVolume(volume / 100)
+                    Synth.play(instrument, noteStr, nOctaves, duration / 8 * crotchetDuration)
+                setTimeout(playHelper, duration / 8 * crotchetDuration * 1000)
                 i++
         playHelper()
 
     shouldStop: false
     stopPlaying: ->
         @shouldStop = true
-        @playingOscillator.stop()
 
     onClick: (e) ->
         {song} = @state
@@ -231,8 +224,28 @@ App = React.createClass
         @setState
             sectionsPerLine: parseInt(e.target.value)
 
+    onChangeVolume: (v) ->
+        @setState
+            volume: v
+
+    onChangeBPM: (e) ->
+        @setState
+            bpm: parseInt(e.target.value)
+
+    instruments: ["piano", "organ", "acoustic", "edm"]
+
+    onSelectInstrument: (eventKey) ->
+        @setState
+            instrument: eventKey
+
+    onClickInstrument: (e) ->
+        {volume, bpm, instrument} = @state
+        crotchetDuration = 60 / bpm
+        Synth.setVolume(volume / 100)
+        Synth.play(instrument, "C", 4, crotchetDuration * 2)
+
     render: ->
-        {song, melody, alignSections, rawTime, sectionsPerLine, isPlaying, volume} = @state
+        {song, melody, alignSections, rawTime, sectionsPerLine, isPlaying, volume, bpm, instrument} = @state
         
         brand =
             <a href="https://github.com/felixhao28/react-jianpu" className="logo">
@@ -255,12 +268,40 @@ App = React.createClass
                     <Col md={8}>
                         <Input groupClassName="markup-input" ref="input" type="textarea" label="Markup" defaultValue={melody} rows={10}/>
                     </Col>
-                    <Col md={4}><Panel header="Options">
-                        <Input type="text" label="Key" placeholder="1=C" addonBefore="1=" value={song.key.right} onChange={@onChangeKey} />
-                        <Input type="text" label="Time" placeholder="4/4" value={rawTime} onChange={@onChangeTime} bsStyle={if not @validateTime(rawTime) then "error"}/>
-                        <Input type="checkbox" label="Align Sections" onChange={@onChangeAlign} checked={alignSections}/>
-                        <Input type="number" label="Sections per line" placeholder="4" value={sectionsPerLine} onChange={@onChangeSPL}/>
-                    </Panel></Col>
+                    <Col md={4}>
+                        <PanelGroup defaultActiveKey="1" accordion>
+                        <Panel header="General" eventKey="1">
+                            <Input type="text" label="Key" placeholder="1=C" addonBefore="1=" value={song.key.right} onChange={@onChangeKey} />
+                            <Input type="text" label="Time" placeholder="4/4" value={rawTime} onChange={@onChangeTime} bsStyle={if not @validateTime(rawTime) then "error"}/>
+                            <Input type="checkbox" label="Align Sections" onChange={@onChangeAlign} checked={alignSections}/>
+                            <Input type="number" label="Sections per line" placeholder="4" value={sectionsPerLine} onChange={@onChangeSPL}/>
+                        </Panel>
+                        <Panel header="Playback" eventKey="2">
+                            <div className="form-group">
+                                <label className="control-label">Volume</label>
+                                <Slider
+                                    min={0}
+                                    max={100}
+                                    step={1}
+                                    value={volume}
+                                    onSlide={@onChangeVolume}
+                                    toolTip={true}
+                                    formatter={(v) -> "#{v}%"}
+                                />
+                            </div>
+                            <Input type="number" label="BPM" placeholder="120" value={bpm} onChange={@onChangeBPM}/>
+                            <div className="form-group">
+                                <label className="control-label">Instrument</label>
+                                <SplitButton title={instrument} onSelect={@onSelectInstrument} onClick={@onClickInstrument}>
+                                {
+                                    for instr in @instruments
+                                        <MenuItem key={instr} eventKey={instr}>{instr}</MenuItem>
+                                }
+                                </SplitButton>
+                            </div>
+                        </Panel>
+                        </PanelGroup>
+                    </Col>
                 </Row>
             </Grid>
             <Panel header="Preview">

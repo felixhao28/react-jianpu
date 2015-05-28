@@ -1,4 +1,5 @@
-var App, parse, rowyourboat;
+var App, parse, rowyourboat,
+  __modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
 
 parse = function(m) {
   var base, deli, handleLastline, i, isNum, lastLine, line, lines, lyricsDelims, noteDelims, notes, _i, _j, _k, _l, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3;
@@ -188,29 +189,19 @@ App = React.createClass({
         }
       },
       isPlaying: null,
-      volume: 0.3
+      volume: 30,
+      bpm: 120,
+      instrument: "piano"
     };
   },
-  playingOscillator: null,
   playNotes: function(notes) {
-    var context, gainCtrl, i, osc, playHelper;
-    context = (this.audiocontext || (this.audiocontext = new AudioContext()));
-    gainCtrl = context.createGain();
-    gainCtrl.gain.value = this.state.volume;
-    gainCtrl.connect(context.destination);
-    osc = context.createOscillator();
-    osc.connect(gainCtrl);
-    osc.frequency.value = 0;
-    osc.start();
-    this.playingOscillator = osc;
+    var i, playHelper;
     i = 0;
     playHelper = (function(_this) {
       return function() {
-        var diff, duration, freq, note, pitch;
+        var bpm, crotchetDuration, diff, duration, instrument, n, nOctaves, note, noteStr, pitch, unitPitch, volume, _ref;
         if (i >= notes.length || _this.shouldStop) {
           _this.shouldStop = false;
-          osc.stop();
-          _this.playingOscillator = null;
           return _this.setState({
             isPlaying: null
           });
@@ -220,16 +211,21 @@ App = React.createClass({
           _this.setState({
             isPlaying: note
           });
+          _ref = _this.state, volume = _ref.volume, bpm = _ref.bpm, instrument = _ref.instrument;
+          crotchetDuration = 60 / bpm;
           if (pitch.base > 0) {
-            diff = pitch.base + pitch.accidental - a4;
-            freq = 440 * Math.pow(2, diff / 12);
-            osc.frequency.value = freq;
-          } else {
-            osc.frequency.value = 0;
+            diff = pitch.base + pitch.accidental - c4;
+            unitPitch = __modulo(diff, 12);
+            n = notesMap[unitPitch];
+            noteStr = String.fromCharCode(65 + (n.number + 1) % 7);
+            if (n.accidental === 1) {
+              noteStr += "#";
+            }
+            nOctaves = Math.floor(diff / 12) + 4;
+            Synth.setVolume(volume / 100);
+            Synth.play(instrument, noteStr, nOctaves, duration / 8 * crotchetDuration);
           }
-          setTimeout(function() {
-            return playHelper();
-          }, duration / 8 * 400);
+          setTimeout(playHelper, duration / 8 * crotchetDuration * 1000);
           return i++;
         }
       };
@@ -238,8 +234,7 @@ App = React.createClass({
   },
   shouldStop: false,
   stopPlaying: function() {
-    this.shouldStop = true;
-    return this.playingOscillator.stop();
+    return this.shouldStop = true;
   },
   onClick: function(e) {
     var melody, song;
@@ -300,9 +295,32 @@ App = React.createClass({
       sectionsPerLine: parseInt(e.target.value)
     });
   },
+  onChangeVolume: function(v) {
+    return this.setState({
+      volume: v
+    });
+  },
+  onChangeBPM: function(e) {
+    return this.setState({
+      bpm: parseInt(e.target.value)
+    });
+  },
+  instruments: ["piano", "organ", "acoustic", "edm"],
+  onSelectInstrument: function(eventKey) {
+    return this.setState({
+      instrument: eventKey
+    });
+  },
+  onClickInstrument: function(e) {
+    var bpm, crotchetDuration, instrument, volume, _ref;
+    _ref = this.state, volume = _ref.volume, bpm = _ref.bpm, instrument = _ref.instrument;
+    crotchetDuration = 60 / bpm;
+    Synth.setVolume(volume / 100);
+    return Synth.play(instrument, "C", 4, crotchetDuration * 2);
+  },
   render: function() {
-    var alignSections, brand, isPlaying, melody, rawTime, sectionsPerLine, song, volume, _ref;
-    _ref = this.state, song = _ref.song, melody = _ref.melody, alignSections = _ref.alignSections, rawTime = _ref.rawTime, sectionsPerLine = _ref.sectionsPerLine, isPlaying = _ref.isPlaying, volume = _ref.volume;
+    var alignSections, bpm, brand, instr, instrument, isPlaying, melody, rawTime, sectionsPerLine, song, volume, _ref;
+    _ref = this.state, song = _ref.song, melody = _ref.melody, alignSections = _ref.alignSections, rawTime = _ref.rawTime, sectionsPerLine = _ref.sectionsPerLine, isPlaying = _ref.isPlaying, volume = _ref.volume, bpm = _ref.bpm, instrument = _ref.instrument;
     brand = React.createElement("a", {
       "href": "https://github.com/felixhao28/react-jianpu",
       "className": "logo"
@@ -331,8 +349,12 @@ App = React.createClass({
       "rows": 10.
     })), React.createElement(Col, {
       "md": 4.
+    }, React.createElement(PanelGroup, {
+      "defaultActiveKey": "1",
+      "accordion": true
     }, React.createElement(Panel, {
-      "header": "Options"
+      "header": "General",
+      "eventKey": "1"
     }, React.createElement(Input, {
       "type": "text",
       "label": "Key",
@@ -358,7 +380,50 @@ App = React.createClass({
       "placeholder": "4",
       "value": sectionsPerLine,
       "onChange": this.onChangeSPL
-    }))))), React.createElement(Panel, {
+    })), React.createElement(Panel, {
+      "header": "Playback",
+      "eventKey": "2"
+    }, React.createElement("div", {
+      "className": "form-group"
+    }, React.createElement("label", {
+      "className": "control-label"
+    }, "Volume"), React.createElement(Slider, {
+      "min": 0.,
+      "max": 100.,
+      "step": 1.,
+      "value": volume,
+      "onSlide": this.onChangeVolume,
+      "toolTip": true,
+      "formatter": (function(v) {
+        return "" + v + "%";
+      })
+    })), React.createElement(Input, {
+      "type": "number",
+      "label": "BPM",
+      "placeholder": "120",
+      "value": bpm,
+      "onChange": this.onChangeBPM
+    }), React.createElement("div", {
+      "className": "form-group"
+    }, React.createElement("label", {
+      "className": "control-label"
+    }, "Instrument"), React.createElement(SplitButton, {
+      "title": instrument,
+      "onSelect": this.onSelectInstrument,
+      "onClick": this.onClickInstrument
+    }, (function() {
+      var _i, _len, _ref1, _results;
+      _ref1 = this.instruments;
+      _results = [];
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        instr = _ref1[_i];
+        _results.push(React.createElement(MenuItem, {
+          "key": instr,
+          "eventKey": instr
+        }, instr));
+      }
+      return _results;
+    }).call(this)))))))), React.createElement(Panel, {
       "header": "Preview"
     }, React.createElement(Jianpu, {
       "song": song,
