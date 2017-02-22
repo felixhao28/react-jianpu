@@ -167,6 +167,7 @@ App = React.createClass
     getInitialState: ->
         alignSections: true
         markup: exampleSongs[0].markup
+        json: JSON.stringify(exampleSongs[0].melody, null, 2)
         rawTime: "3/4"
         rawKey: "1=C"
         sectionsPerLine: 4
@@ -175,6 +176,7 @@ App = React.createClass
         volume: 30
         bpm: 120
         instrument: "piano"
+        useMarkup: true
 
     playNotes: (notes) ->
         i = 0
@@ -217,8 +219,11 @@ App = React.createClass
         @shouldStop = true
 
     onClick: (e) ->
-        {song} = @state
-        melody = parse(@refs.input.getValue())
+        {song, markup, useMarkup, json} = @state
+        if useMarkup
+            melody = parse(markup)
+        else
+            melody = JSON.parse(json)
         song.melody = melody
 
         @setState
@@ -294,18 +299,28 @@ App = React.createClass
         Synth.play(instrument, "C", 4, crotchetDuration * 2)
 
     selectSong: (eventKey) ->
-        console.log eventKey
         @setState
             song: exampleSongs[eventKey]
             markup: exampleSongs[eventKey].markup
+            json: JSON.stringify(exampleSongs[eventKey].melody, null, 2)
 
     changeMarkup: (e) ->
         @setState
             markup: e.target.value
 
+    changeJSON: (e) ->
+        @setState
+            json: e.target.value
+
+    toggleInputFormat: ->
+        if @state.useMarkup
+            @setState
+                json: JSON.stringify(parse(@state.markup), null, 2)
+        @setState
+            useMarkup: not @state.useMarkup
+
     render: ->
-        {song, markup, alignSections, rawTime, sectionsPerLine, isPlaying, volume, bpm, instrument, rawKey} = @state
-        console.log song.name
+        {song, markup, json, useMarkup, alignSections, rawTime, sectionsPerLine, isPlaying, volume, bpm, instrument, rawKey} = @state
         brand =
             <a href="https://github.com/felixhao28/react-jianpu" className="logo">
                 react-jianpu
@@ -331,7 +346,13 @@ App = React.createClass
                                 <MenuItem key={i} eventKey={i}>{exampleSong.name}</MenuItem>
                         }
                         </DropdownButton>
-                        <Input groupClassName="markup-input" type="textarea" label="Markup" onChange={@changeMarkup} value={markup} rows={10}/>
+                        <Input type="checkbox" label="JSON" onChange={@toggleInputFormat} checked={not useMarkup}/>
+                        {
+                            if useMarkup
+                                <Input groupClassName="markup-input" type="textarea" label="Markup" onChange={@changeMarkup} value={markup} rows={10}/>
+                            else
+                                <Input groupClassName="markup-input" type="textarea" label="JSON" onChange={@changeJSON} value={json} rows={10}/>
+                        }
                     </Col>
                     <Col md={4}>
                         <PanelGroup defaultActiveKey="1" accordion>

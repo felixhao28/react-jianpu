@@ -210,7 +210,6 @@ Jianpu = React.createClass
 
     render: ->
         {song, width, height, sectionsPerLine, alignSections, highlight} = @props
-        console.log song.name
         heightPerLine = 200
         marginBottom = 0
         sectionPadding = 20

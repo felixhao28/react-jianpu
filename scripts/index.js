@@ -207,6 +207,7 @@ App = React.createClass({displayName: "App",
     return {
       alignSections: true,
       markup: exampleSongs[0].markup,
+      json: JSON.stringify(exampleSongs[0].melody, null, 2),
       rawTime: "3/4",
       rawKey: "1=C",
       sectionsPerLine: 4,
@@ -214,7 +215,8 @@ App = React.createClass({displayName: "App",
       isPlaying: null,
       volume: 30,
       bpm: 120,
-      instrument: "piano"
+      instrument: "piano",
+      useMarkup: true
     };
   },
   playNotes: function(notes) {
@@ -269,9 +271,13 @@ App = React.createClass({displayName: "App",
     return this.shouldStop = true;
   },
   onClick: function(e) {
-    var melody, song;
-    song = this.state.song;
-    melody = parse(this.refs.input.getValue());
+    var json, markup, melody, ref, song, useMarkup;
+    ref = this.state, song = ref.song, markup = ref.markup, useMarkup = ref.useMarkup, json = ref.json;
+    if (useMarkup) {
+      melody = parse(markup);
+    } else {
+      melody = JSON.parse(json);
+    }
     song.melody = melody;
     return this.setState({
       song: song
@@ -371,10 +377,10 @@ App = React.createClass({displayName: "App",
     return Synth.play(instrument, "C", 4, crotchetDuration * 2);
   },
   selectSong: function(eventKey) {
-    console.log(eventKey);
     return this.setState({
       song: exampleSongs[eventKey],
-      markup: exampleSongs[eventKey].markup
+      markup: exampleSongs[eventKey].markup,
+      json: JSON.stringify(exampleSongs[eventKey].melody, null, 2)
     });
   },
   changeMarkup: function(e) {
@@ -382,10 +388,24 @@ App = React.createClass({displayName: "App",
       markup: e.target.value
     });
   },
+  changeJSON: function(e) {
+    return this.setState({
+      json: e.target.value
+    });
+  },
+  toggleInputFormat: function() {
+    if (this.state.useMarkup) {
+      this.setState({
+        json: JSON.stringify(parse(this.state.markup), null, 2)
+      });
+    }
+    return this.setState({
+      useMarkup: !this.state.useMarkup
+    });
+  },
   render: function() {
-    var alignSections, bpm, brand, exampleSong, i, instr, instrument, isPlaying, markup, rawKey, rawTime, ref, sectionsPerLine, song, volume;
-    ref = this.state, song = ref.song, markup = ref.markup, alignSections = ref.alignSections, rawTime = ref.rawTime, sectionsPerLine = ref.sectionsPerLine, isPlaying = ref.isPlaying, volume = ref.volume, bpm = ref.bpm, instrument = ref.instrument, rawKey = ref.rawKey;
-    console.log(song.name);
+    var alignSections, bpm, brand, exampleSong, i, instr, instrument, isPlaying, json, markup, rawKey, rawTime, ref, sectionsPerLine, song, useMarkup, volume;
+    ref = this.state, song = ref.song, markup = ref.markup, json = ref.json, useMarkup = ref.useMarkup, alignSections = ref.alignSections, rawTime = ref.rawTime, sectionsPerLine = ref.sectionsPerLine, isPlaying = ref.isPlaying, volume = ref.volume, bpm = ref.bpm, instrument = ref.instrument, rawKey = ref.rawKey;
     brand = React.createElement("a", {
       "href": "https://github.com/felixhao28/react-jianpu",
       "className": "logo"
@@ -420,13 +440,25 @@ App = React.createClass({displayName: "App",
       }
       return results;
     })()), React.createElement(Input, {
+      "type": "checkbox",
+      "label": "JSON",
+      "onChange": this.toggleInputFormat,
+      "checked": !useMarkup
+    }), (useMarkup ? React.createElement(Input, {
       "groupClassName": "markup-input",
       "type": "textarea",
       "label": "Markup",
       "onChange": this.changeMarkup,
       "value": markup,
       "rows": 10
-    })), React.createElement(Col, {
+    }) : React.createElement(Input, {
+      "groupClassName": "markup-input",
+      "type": "textarea",
+      "label": "JSON",
+      "onChange": this.changeJSON,
+      "value": json,
+      "rows": 10
+    }))), React.createElement(Col, {
       "md": 4
     }, React.createElement(PanelGroup, {
       "defaultActiveKey": "1",

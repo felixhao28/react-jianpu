@@ -300,7 +300,6 @@ Jianpu = React.createClass({displayName: "Jianpu",
   render: function() {
     var alignSections, barX, barY, comp, computedNotes, computedSections, ctrl1X, ctrl2X, currentSection, delta, duration, height, heightPerLine, highlight, i, j, k, l, lastWidth, len, len1, len2, len3, len4, len5, len6, len7, len8, m, marginBottom, n, nLines, nSectionsThisLine, newWidth, newstartX, newx, note, noteInfo, notes, o, offset, p, pitch, q, r, ref, ref1, ref2, ref3, ref4, s, section, sectionLength, sectionOffsets, sectionPadding, sectionWidth, sections, sectionsPerLine, slur, slurEndX, slurEndY, slurX, slurY, slurs, song, startX, startY, t, width, x, x1, x2, xSpan, y, y1, y2;
     ref = this.props, song = ref.song, width = ref.width, height = ref.height, sectionsPerLine = ref.sectionsPerLine, alignSections = ref.alignSections, highlight = ref.highlight;
-    console.log(song.name);
     heightPerLine = 200;
     marginBottom = 0;
     sectionPadding = 20;
