@@ -1,31 +1,31 @@
-var App, parse, rowyourboat,
-  __modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
+var App, exampleSongs, parse, rowyourboat, susanna,
+  modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
 
 parse = function(m) {
-  var base, deli, handleLastline, i, isNum, lastLine, line, lines, lyricsDelims, noteDelims, notes, _i, _j, _k, _l, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3;
+  var base, deli, handleLastline, i, isNum, j, k, l, lastLine, len, len1, len2, line, lines, lyricsDelims, noteDelims, notes, o, ref, ref1, ref2, ref3;
   notes = [];
   base = c4;
   lines = m.split("\n");
   isNum = {};
-  _ref = [0, 1, 2, 3, 4, 5, 6, 7];
-  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-    i = _ref[_i];
+  ref = [0, 1, 2, 3, 4, 5, 6, 7];
+  for (j = 0, len = ref.length; j < len; j++) {
+    i = ref[j];
     isNum[i] = true;
   }
   noteDelims = {};
-  _ref1 = ["<", ">", "#", "b"];
-  for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-    deli = _ref1[_j];
+  ref1 = ["<", ">", "#", "b"];
+  for (k = 0, len1 = ref1.length; k < len1; k++) {
+    deli = ref1[k];
     noteDelims[deli] = true;
   }
   lyricsDelims = {};
-  _ref2 = [",", ".", ";", "?", "!", "(", ")", " ", void 0];
-  for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-    deli = _ref2[_k];
+  ref2 = [",", ".", ";", "?", "!", "(", ")", " ", void 0];
+  for (l = 0, len2 = ref2.length; l < len2; l++) {
+    deli = ref2[l];
     lyricsDelims[deli] = true;
   }
   handleLastline = function(line) {
-    var accidental, c, control, controlLine, duration, extraDuration, lastLyricsChar, lyrics, lyricsChar, lyricsLine, main, options, pitch, tempo, tempoLine, _l, _len3, _results;
+    var accidental, c, control, controlLine, duration, extraDuration, lastLyricsChar, len3, lyrics, lyricsChar, lyricsLine, main, o, options, pitch, results, tempo, tempoLine;
     tempoLine = line.tempoLine, controlLine = line.controlLine, lyricsLine = line.lyricsLine, main = line.main;
     pitch = null;
     extraDuration = 0;
@@ -33,8 +33,8 @@ parse = function(m) {
     accidental = 0;
     lyrics = {};
     lastLyricsChar = void 0;
-    _results = [];
-    for (i = _l = 0, _len3 = main.length; _l < _len3; i = ++_l) {
+    results = [];
+    for (i = o = 0, len3 = main.length; o < len3; i = ++o) {
       c = main[i];
       if (i === main.length - 1 || pitch !== null && (isNum[c] || noteDelims[c])) {
         if (lyrics.exists) {
@@ -115,6 +115,8 @@ parse = function(m) {
       if (isNum[c]) {
         duration = (function() {
           switch (tempo) {
+            case "#":
+              return 1;
             case "-":
               return 4;
             case "=":
@@ -133,12 +135,12 @@ parse = function(m) {
           lyrics.hyphen = !(lastLyricsChar in lyricsDelims);
         }
       }
-      _results.push(lastLyricsChar = lyricsChar);
+      results.push(lastLyricsChar = lyricsChar);
     }
-    return _results;
+    return results;
   };
   lastLine = {};
-  for (i = _l = 0, _ref3 = lines.length; _l < _ref3; i = _l += 1) {
+  for (i = o = 0, ref3 = lines.length; o < ref3; i = o += 1) {
     line = lines[i];
     if (line[0] === "T") {
       lastLine.tempoLine = line.slice(1);
@@ -169,26 +171,46 @@ parse = function(m) {
 
 rowyourboat = "M1.   1.|  1   2    3.|   3  2   3    4|  5--|\nT              -             -        -\nLRow, row, row your boat, gently down the stream.\nM<1.>5.| 3.     1.| 5   4 3  2|1--|\nT                       -    -\nC                   S   s \nL Ha ha, fooled ya, I'm a submarine.";
 
-App = React.createClass({
+susanna = "M00001  2|3    5    5.6 5 3  1.   2  3  3  2  1  2     1   2|\nT   -=  = =    =    = # = =  =    #  =  =  =  =  -     =   =\nL    Oh I come from A labama with my banjo on my knee. And I'm\nC       S s                                                S\nM3    5   5.  6 531. 2  3    3    2   2  1|\nT=    =   =   # ===  #  =    =    =   =  \nLgoin' to Louisia na My true love for to see.\nCs              Ss";
+
+exampleSongs = [
+  {
+    name: "Row your boat",
+    markup: rowyourboat,
+    melody: parse(rowyourboat),
+    time: {
+      upper: 3,
+      lower: 4
+    },
+    key: {
+      left: "1",
+      right: "C"
+    }
+  }, {
+    name: "Oh Susanna",
+    markup: susanna,
+    melody: parse(susanna),
+    time: {
+      upper: 4,
+      lower: 4
+    },
+    key: {
+      left: "1",
+      right: "C"
+    }
+  }
+];
+
+App = React.createClass({displayName: "App",
   mixins: [React.addons.LinkedStateMixin],
   getInitialState: function() {
     return {
       alignSections: true,
-      melody: rowyourboat,
+      markup: exampleSongs[0].markup,
       rawTime: "3/4",
       rawKey: "1=C",
       sectionsPerLine: 4,
-      song: {
-        melody: parse(rowyourboat),
-        time: {
-          upper: 3,
-          lower: 4
-        },
-        key: {
-          left: "1",
-          right: "C"
-        }
-      },
+      song: exampleSongs[0],
       isPlaying: null,
       volume: 30,
       bpm: 120,
@@ -200,7 +222,7 @@ App = React.createClass({
     i = 0;
     playHelper = (function(_this) {
       return function() {
-        var base, bpm, crotchetDuration, diff, duration, instrument, m, n, nOctaves, note, noteStr, number, pitch, song, unitPitch, _ref;
+        var base, bpm, crotchetDuration, diff, duration, instrument, m, n, nOctaves, note, noteStr, number, pitch, ref, song, unitPitch;
         if (i >= notes.length || _this.shouldStop) {
           _this.shouldStop = false;
           return _this.setState({
@@ -212,7 +234,7 @@ App = React.createClass({
           _this.setState({
             isPlaying: note
           });
-          _ref = _this.state, bpm = _ref.bpm, instrument = _ref.instrument, song = _ref.song;
+          ref = _this.state, bpm = ref.bpm, instrument = ref.instrument, song = ref.song;
           crotchetDuration = 60 / bpm;
           if (pitch.base > 0) {
             m = song.key.right.match(/(#|b)?([A-G])/);
@@ -226,7 +248,7 @@ App = React.createClass({
             number = (m[2].charCodeAt(0) - 60) % 7 + 1;
             base += numberMap[number];
             diff = base + pitch.base + pitch.accidental - c4;
-            unitPitch = __modulo(diff, 12);
+            unitPitch = modulo(diff, 12);
             n = notesMap[unitPitch];
             noteStr = String.fromCharCode(65 + (n.number + 1) % 7);
             if (n.accidental === 1) {
@@ -308,9 +330,9 @@ App = React.createClass({
     };
   },
   validateTime: function(rawTime) {
-    var lower, upper, _ref;
-    _ref = this.parseRowTime(rawTime), upper = _ref.upper, lower = _ref.lower;
-    if (("" + upper + "/" + lower) === rawTime) {
+    var lower, ref, upper;
+    ref = this.parseRowTime(rawTime), upper = ref.upper, lower = ref.lower;
+    if ((upper + "/" + lower) === rawTime) {
       return {
         upper: upper,
         lower: lower
@@ -342,15 +364,28 @@ App = React.createClass({
     });
   },
   onClickInstrument: function(e) {
-    var bpm, crotchetDuration, instrument, volume, _ref;
-    _ref = this.state, volume = _ref.volume, bpm = _ref.bpm, instrument = _ref.instrument;
+    var bpm, crotchetDuration, instrument, ref, volume;
+    ref = this.state, volume = ref.volume, bpm = ref.bpm, instrument = ref.instrument;
     crotchetDuration = 60 / bpm;
     Synth.setVolume(volume / 100);
     return Synth.play(instrument, "C", 4, crotchetDuration * 2);
   },
+  selectSong: function(eventKey) {
+    console.log(eventKey);
+    return this.setState({
+      song: exampleSongs[eventKey],
+      markup: exampleSongs[eventKey].markup
+    });
+  },
+  changeMarkup: function(e) {
+    return this.setState({
+      markup: e.target.value
+    });
+  },
   render: function() {
-    var alignSections, bpm, brand, instr, instrument, isPlaying, melody, rawKey, rawTime, sectionsPerLine, song, volume, _ref;
-    _ref = this.state, song = _ref.song, melody = _ref.melody, alignSections = _ref.alignSections, rawTime = _ref.rawTime, sectionsPerLine = _ref.sectionsPerLine, isPlaying = _ref.isPlaying, volume = _ref.volume, bpm = _ref.bpm, instrument = _ref.instrument, rawKey = _ref.rawKey;
+    var alignSections, bpm, brand, exampleSong, i, instr, instrument, isPlaying, markup, rawKey, rawTime, ref, sectionsPerLine, song, volume;
+    ref = this.state, song = ref.song, markup = ref.markup, alignSections = ref.alignSections, rawTime = ref.rawTime, sectionsPerLine = ref.sectionsPerLine, isPlaying = ref.isPlaying, volume = ref.volume, bpm = ref.bpm, instrument = ref.instrument, rawKey = ref.rawKey;
+    console.log(song.name);
     brand = React.createElement("a", {
       "href": "https://github.com/felixhao28/react-jianpu",
       "className": "logo"
@@ -369,16 +404,30 @@ App = React.createClass({
     }, "Play")))), React.createElement(Grid, {
       "fluid": true
     }, React.createElement(Row, null, React.createElement(Col, {
-      "md": 8.
-    }, React.createElement(Input, {
+      "md": 8
+    }, React.createElement(DropdownButton, {
+      "title": song.name,
+      "onSelect": this.selectSong
+    }, (function() {
+      var j, len, results;
+      results = [];
+      for (i = j = 0, len = exampleSongs.length; j < len; i = ++j) {
+        exampleSong = exampleSongs[i];
+        results.push(React.createElement(MenuItem, {
+          "key": i,
+          "eventKey": i
+        }, exampleSong.name));
+      }
+      return results;
+    })()), React.createElement(Input, {
       "groupClassName": "markup-input",
-      "ref": "input",
       "type": "textarea",
       "label": "Markup",
-      "defaultValue": melody,
-      "rows": 10.
+      "onChange": this.changeMarkup,
+      "value": markup,
+      "rows": 10
     })), React.createElement(Col, {
-      "md": 4.
+      "md": 4
     }, React.createElement(PanelGroup, {
       "defaultActiveKey": "1",
       "accordion": true
@@ -418,14 +467,14 @@ App = React.createClass({
     }, React.createElement("label", {
       "className": "control-label"
     }, "Volume"), React.createElement(Slider, {
-      "min": 0.,
-      "max": 100.,
-      "step": 1.,
+      "min": 0,
+      "max": 100,
+      "step": 1,
       "value": volume,
       "onSlide": this.onChangeVolume,
       "toolTip": true,
       "formatter": (function(v) {
-        return "" + v + "%";
+        return v + "%";
       })
     })), React.createElement(Input, {
       "type": "number",
@@ -442,17 +491,17 @@ App = React.createClass({
       "onSelect": this.onSelectInstrument,
       "onClick": this.onClickInstrument
     }, (function() {
-      var _i, _len, _ref1, _results;
-      _ref1 = this.instruments;
-      _results = [];
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        instr = _ref1[_i];
-        _results.push(React.createElement(MenuItem, {
+      var j, len, ref1, results;
+      ref1 = this.instruments;
+      results = [];
+      for (j = 0, len = ref1.length; j < len; j++) {
+        instr = ref1[j];
+        results.push(React.createElement(MenuItem, {
           "key": instr,
           "eventKey": instr
         }, instr));
       }
-      return _results;
+      return results;
     }).call(this)))))))), React.createElement(Panel, {
       "header": "Preview"
     }, React.createElement(Jianpu, {

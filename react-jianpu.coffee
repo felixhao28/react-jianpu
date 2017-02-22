@@ -95,14 +95,6 @@ Jianpu = React.createClass
         sectionsPerLine: 4
         alignSections: false
 
-    getInitialState: ->
-        song: null
-
-    componentDidMount: ->
-        {song} = @props
-        @setState
-            song: song
-
     analyser:
         pitch: (pitch) ->
             if pitch.base is rest
@@ -134,7 +126,7 @@ Jianpu = React.createClass
                     when 6
                         main: 4
                         nDashes: 0
-                        nDots 1
+                        nDots: 1
                     when 7
                         main: 4
                         nDashes: 0
@@ -217,11 +209,10 @@ Jianpu = React.createClass
                 offset + 20
 
     render: ->
-        {song} = @state
-        {width, height, sectionsPerLine, alignSections, highlight} = @props
-
+        {song, width, height, sectionsPerLine, alignSections, highlight} = @props
+        console.log song.name
         heightPerLine = 200
-        marginBottom = 150
+        marginBottom = 0
         sectionPadding = 20
 
         if not song?
@@ -325,12 +316,12 @@ Jianpu = React.createClass
                         nSectionsThisLine = 0
                 if nSectionsThisLine < sectionsPerLine - 1 and currentSection.length > 0
                     lastWidth += @analyser.estimateSectionXSpan(currentSection)
-                    if width < lastWidth
-                        width = lastWidth
+                if width < lastWidth
+                    width = lastWidth
                 width += sectionPadding
 
             if not height?
-                nLines = Math.floor((computedSections.length + (currentSection.length > 0)) / sectionsPerLine)
+                nLines = Math.ceil((computedSections.length + (if currentSection.length > 0 then 1 else 0)) / sectionsPerLine)
                 height = nLines * heightPerLine + marginBottom
 
             <svg width={width} height={height}>
@@ -357,7 +348,11 @@ Jianpu = React.createClass
                                 y1 = slur[1]
                                 x2 = slur[2]
                                 y2 = slur[3]
-                                <path key={"#{i},#{j}"} className="slur" d="M#{x1},#{y1} C#{x1+20},#{y1-20} #{x2-20},#{y2-20} #{x2},#{y2}" />
+                                ctrl1X = x1+20
+                                ctrl2X = x2-20
+                                if ctrl1X > ctrl2X
+                                    ctrl1X = ctrl2X = (x1+x2)/2
+                                <path key={"#{i},#{j}"} className="slur" d="M#{x1},#{y1} C#{ctrl1X},#{y1-20} #{ctrl2X},#{y2-20} #{x2},#{y2}" />
                         }
                         {
                             barX = section.x

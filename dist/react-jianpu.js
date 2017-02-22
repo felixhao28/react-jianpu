@@ -1,5 +1,5 @@
 var Jianpu, a0, a1, a2, a3, a4, a5, b0, b1, b2, b3, b4, b5, c1, c2, c3, c4, c5, d1, d2, d3, d4, d5, e1, e2, e3, e4, e5, f1, f2, f3, f4, f5, g1, g2, g3, g4, g5, notesMap, numberMap, rest,
-  __modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
+  modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
 
 rest = -1;
 
@@ -138,24 +138,12 @@ notesMap = {
   }
 };
 
-Jianpu = React.createClass({
+Jianpu = React.createClass({displayName: "Jianpu",
   getDefaultProps: function() {
     return {
       sectionsPerLine: 4,
       alignSections: false
     };
-  },
-  getInitialState: function() {
-    return {
-      song: null
-    };
-  },
-  componentDidMount: function() {
-    var song;
-    song = this.props.song;
-    return this.setState({
-      song: song
-    });
   },
   analyser: {
     pitch: function(pitch) {
@@ -168,7 +156,7 @@ Jianpu = React.createClass({
         };
       } else {
         diff = pitch.base - c4;
-        unitPitch = __modulo(diff, 12);
+        unitPitch = modulo(diff, 12);
         return {
           nOctaves: Math.floor(diff / 12),
           number: notesMap[unitPitch].number,
@@ -197,11 +185,11 @@ Jianpu = React.createClass({
               nDots: 1
             };
           case 6:
-            ({
+            return {
               main: 4,
-              nDashes: 0
-            });
-            return nDots(1);
+              nDashes: 0,
+              nDots: 1
+            };
           case 7:
             return {
               main: 4,
@@ -296,12 +284,12 @@ Jianpu = React.createClass({
       return Math.max(this.estimateMusicXSpan(note, nextNote), this.estimateLyricsXSpan(note));
     },
     estimateSectionXSpan: function(section) {
-      var i, note, offset, _i, _len;
+      var i, k, len, note, offset;
       if (section.length === 0) {
         return 0;
       } else {
         offset = 0;
-        for (i = _i = 0, _len = section.length; _i < _len; i = ++_i) {
+        for (i = k = 0, len = section.length; k < len; i = ++k) {
           note = section[i];
           offset += this.estimateXSpan(note, section[i + 1]);
         }
@@ -310,11 +298,11 @@ Jianpu = React.createClass({
     }
   },
   render: function() {
-    var alignSections, barX, barY, comp, computedNotes, computedSections, currentSection, delta, duration, height, heightPerLine, highlight, i, j, lastWidth, marginBottom, nLines, nSectionsThisLine, newWidth, newstartX, newx, note, noteInfo, notes, offset, pitch, section, sectionLength, sectionOffsets, sectionPadding, sectionWidth, sections, sectionsPerLine, slur, slurEndX, slurEndY, slurX, slurY, slurs, song, startX, startY, width, x, x1, x2, xSpan, y, y1, y2, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _len7, _len8, _m, _n, _o, _p, _q, _r, _ref, _ref1, _ref2, _ref3, _ref4;
-    song = this.state.song;
-    _ref = this.props, width = _ref.width, height = _ref.height, sectionsPerLine = _ref.sectionsPerLine, alignSections = _ref.alignSections, highlight = _ref.highlight;
+    var alignSections, barX, barY, comp, computedNotes, computedSections, ctrl1X, ctrl2X, currentSection, delta, duration, height, heightPerLine, highlight, i, j, k, l, lastWidth, len, len1, len2, len3, len4, len5, len6, len7, len8, m, marginBottom, n, nLines, nSectionsThisLine, newWidth, newstartX, newx, note, noteInfo, notes, o, offset, p, pitch, q, r, ref, ref1, ref2, ref3, ref4, s, section, sectionLength, sectionOffsets, sectionPadding, sectionWidth, sections, sectionsPerLine, slur, slurEndX, slurEndY, slurX, slurY, slurs, song, startX, startY, t, width, x, x1, x2, xSpan, y, y1, y2;
+    ref = this.props, song = ref.song, width = ref.width, height = ref.height, sectionsPerLine = ref.sectionsPerLine, alignSections = ref.alignSections, highlight = ref.highlight;
+    console.log(song.name);
     heightPerLine = 200;
-    marginBottom = 150;
+    marginBottom = 0;
     sectionPadding = 20;
     if (song == null) {
       return React.createElement("div", null);
@@ -323,9 +311,9 @@ Jianpu = React.createClass({
       offset = 0;
       sections = [];
       currentSection = [];
-      _ref1 = song.melody;
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        note = _ref1[_i];
+      ref1 = song.melody;
+      for (k = 0, len = ref1.length; k < len; k++) {
+        note = ref1[k];
         duration = note.duration;
         offset += duration;
         currentSection.push(note);
@@ -338,12 +326,12 @@ Jianpu = React.createClass({
       x = y = 0;
       nSectionsThisLine = 0;
       computedSections = [];
-      for (i = _j = 0, _len1 = sections.length; _j < _len1; i = ++_j) {
+      for (i = l = 0, len1 = sections.length; l < len1; i = ++l) {
         section = sections[i];
         startX = x;
         startY = y;
         computedNotes = [];
-        for (j = _k = 0, _len2 = section.length; _k < _len2; j = ++_k) {
+        for (j = m = 0, len2 = section.length; m < len2; j = ++m) {
           note = section[j];
           pitch = this.analyser.pitch(note.pitch);
           duration = this.analyser.duration(note.duration);
@@ -372,16 +360,16 @@ Jianpu = React.createClass({
       }
       if (alignSections) {
         sectionWidth = (function() {
-          var _l, _results;
-          _results = [];
-          for (i = _l = 0; _l < sectionsPerLine; i = _l += 1) {
-            _results.push(0);
+          var n, ref2, results;
+          results = [];
+          for (i = n = 0, ref2 = sectionsPerLine; n < ref2; i = n += 1) {
+            results.push(0);
           }
-          return _results;
+          return results;
         })();
         nSectionsThisLine = 0;
-        for (_l = 0, _len3 = computedSections.length; _l < _len3; _l++) {
-          section = computedSections[_l];
+        for (n = 0, len3 = computedSections.length; n < len3; n++) {
+          section = computedSections[n];
           newWidth = section.x - section.startX;
           if (newWidth > sectionWidth[nSectionsThisLine]) {
             sectionWidth[nSectionsThisLine] = newWidth;
@@ -389,19 +377,19 @@ Jianpu = React.createClass({
           nSectionsThisLine = (nSectionsThisLine + 1) % sectionsPerLine;
         }
         sectionOffsets = [0];
-        for (i = _m = 0, _ref2 = sectionWidth.length; _m < _ref2; i = _m += 1) {
+        for (i = o = 0, ref2 = sectionWidth.length; o < ref2; i = o += 1) {
           sectionOffsets[i + 1] = sectionOffsets[i] + sectionWidth[i];
         }
         nSectionsThisLine = 0;
-        for (_n = 0, _len4 = computedSections.length; _n < _len4; _n++) {
-          section = computedSections[_n];
+        for (p = 0, len4 = computedSections.length; p < len4; p++) {
+          section = computedSections[p];
           xSpan = section.x - section.startX;
           newstartX = sectionOffsets[nSectionsThisLine];
           newx = sectionOffsets[nSectionsThisLine + 1];
           delta = (newx - newstartX - xSpan) / section.notes.length;
-          _ref3 = section.notes;
-          for (i = _o = 0, _len5 = _ref3.length; _o < _len5; i = ++_o) {
-            noteInfo = _ref3[i];
+          ref3 = section.notes;
+          for (i = q = 0, len5 = ref3.length; q < len5; i = ++q) {
+            noteInfo = ref3[i];
             noteInfo.x = (noteInfo.x - section.startX) + delta * (i + 1) + newstartX;
           }
           section.startX = newstartX;
@@ -409,12 +397,12 @@ Jianpu = React.createClass({
           nSectionsThisLine = (nSectionsThisLine + 1) % sectionsPerLine;
         }
       }
-      for (_p = 0, _len6 = computedSections.length; _p < _len6; _p++) {
-        section = computedSections[_p];
+      for (r = 0, len6 = computedSections.length; r < len6; r++) {
+        section = computedSections[r];
         section.slurs = [];
-        _ref4 = section.notes;
-        for (_q = 0, _len7 = _ref4.length; _q < _len7; _q++) {
-          noteInfo = _ref4[_q];
+        ref4 = section.notes;
+        for (s = 0, len7 = ref4.length; s < len7; s++) {
+          noteInfo = ref4[s];
           if (noteInfo.note.options != null) {
             slur = noteInfo.note.options.slur;
             if (slur === "start") {
@@ -432,8 +420,8 @@ Jianpu = React.createClass({
         nSectionsThisLine = 0;
         width = -1;
         lastWidth = 0;
-        for (_r = 0, _len8 = computedSections.length; _r < _len8; _r++) {
-          section = computedSections[_r];
+        for (t = 0, len8 = computedSections.length; t < len8; t++) {
+          section = computedSections[t];
           lastWidth += section.x - section.startX;
           nSectionsThisLine = nSectionsThisLine + 1;
           if (nSectionsThisLine === sectionsPerLine && width < lastWidth) {
@@ -444,38 +432,38 @@ Jianpu = React.createClass({
         }
         if (nSectionsThisLine < sectionsPerLine - 1 && currentSection.length > 0) {
           lastWidth += this.analyser.estimateSectionXSpan(currentSection);
-          if (width < lastWidth) {
-            width = lastWidth;
-          }
+        }
+        if (width < lastWidth) {
+          width = lastWidth;
         }
         width += sectionPadding;
       }
       if (height == null) {
-        nLines = Math.floor((computedSections.length + (currentSection.length > 0)) / sectionsPerLine);
+        nLines = Math.ceil((computedSections.length + (currentSection.length > 0 ? 1 : 0)) / sectionsPerLine);
         height = nLines * heightPerLine + marginBottom;
       }
       return React.createElement("svg", {
         "width": width,
         "height": height
       }, React.createElement("text", {
-        "x": 10.,
-        "y": 20.,
+        "x": 10,
+        "y": 20,
         "className": "signature"
-      }, "" + song.key.left + "=" + song.key.right + " " + song.time.upper + "/" + song.time.lower), (function() {
-        var _len9, _results, _s;
-        _results = [];
-        for (i = _s = 0, _len9 = computedSections.length; _s < _len9; i = ++_s) {
+      }, song.key.left + "=" + song.key.right + " " + song.time.upper + "/" + song.time.lower), (function() {
+        var len9, results, u;
+        results = [];
+        for (i = u = 0, len9 = computedSections.length; u < len9; i = ++u) {
           section = computedSections[i];
           notes = section.notes, slurs = section.slurs;
-          _results.push(React.createElement("g", {
+          results.push(React.createElement("g", {
             "key": i
           }, (function() {
-            var _len10, _results1, _t;
-            _results1 = [];
-            for (j = _t = 0, _len10 = notes.length; _t < _len10; j = ++_t) {
+            var len10, results1, v;
+            results1 = [];
+            for (j = v = 0, len10 = notes.length; v < len10; j = ++v) {
               noteInfo = notes[j];
               note = noteInfo.note, pitch = noteInfo.pitch, duration = noteInfo.duration;
-              _results1.push(React.createElement(Jianpu.Note, {
+              results1.push(React.createElement(Jianpu.Note, {
                 "key": j,
                 "note": note,
                 "x": noteInfo.x,
@@ -485,23 +473,28 @@ Jianpu = React.createClass({
                 "highlight": highlight === note
               }));
             }
-            return _results1;
+            return results1;
           })(), (function() {
-            var _len10, _results1, _t;
-            _results1 = [];
-            for (j = _t = 0, _len10 = slurs.length; _t < _len10; j = ++_t) {
+            var len10, results1, v;
+            results1 = [];
+            for (j = v = 0, len10 = slurs.length; v < len10; j = ++v) {
               slur = slurs[j];
               x1 = slur[0];
               y1 = slur[1];
               x2 = slur[2];
               y2 = slur[3];
-              _results1.push(React.createElement("path", {
-                "key": "" + i + "," + j,
+              ctrl1X = x1 + 20;
+              ctrl2X = x2 - 20;
+              if (ctrl1X > ctrl2X) {
+                ctrl1X = ctrl2X = (x1 + x2) / 2;
+              }
+              results1.push(React.createElement("path", {
+                "key": i + "," + j,
                 "className": "slur",
-                "d": "M" + x1 + "," + y1 + " C" + (x1 + 20) + "," + (y1 - 20) + " " + (x2 - 20) + "," + (y2 - 20) + " " + x2 + "," + y2
+                "d": "M" + x1 + "," + y1 + " C" + ctrl1X + "," + (y1 - 20) + " " + ctrl2X + "," + (y2 - 20) + " " + x2 + "," + y2
               }));
             }
-            return _results1;
+            return results1;
           })(), (barX = section.x, barY = section.y, i === sections.length - 1 && currentSection.length === 0 ? React.createElement("g", {
             "className": "doublebar-line"
           }, React.createElement("line", {
@@ -523,11 +516,11 @@ Jianpu = React.createClass({
             "y2": 110 + barY
           })))));
         }
-        return _results;
+        return results;
       })(), (function() {
-        var _len9, _results, _s;
-        _results = [];
-        for (i = _s = 0, _len9 = currentSection.length; _s < _len9; i = ++_s) {
+        var len9, results, u;
+        results = [];
+        for (i = u = 0, len9 = currentSection.length; u < len9; i = ++u) {
           note = currentSection[i];
           pitch = this.analyser.pitch(note.pitch);
           duration = this.analyser.duration(note.duration);
@@ -540,18 +533,18 @@ Jianpu = React.createClass({
             "duration": duration
           });
           x += this.analyser.estimateXSpan(note, section[i + 1]);
-          _results.push(comp);
+          results.push(comp);
         }
-        return _results;
+        return results;
       }).call(this));
     }
   }
 });
 
-Jianpu.Note = React.createClass({
+Jianpu.Note = React.createClass({displayName: "Note",
   render: function() {
-    var accidental, accidentalText, duration, highlight, i, lyrics, main, nDashes, nDots, nOctaves, nUnderDashes, note, number, pitch, x, y, _ref;
-    _ref = this.props, note = _ref.note, x = _ref.x, y = _ref.y, pitch = _ref.pitch, duration = _ref.duration, highlight = _ref.highlight;
+    var accidental, accidentalText, duration, highlight, i, lyrics, main, nDashes, nDots, nOctaves, nUnderDashes, note, number, pitch, ref, x, y;
+    ref = this.props, note = ref.note, x = ref.x, y = ref.y, pitch = ref.pitch, duration = ref.duration, highlight = ref.highlight;
     nOctaves = pitch.nOctaves, number = pitch.number, accidental = pitch.accidental;
     main = duration.main, nDashes = duration.nDashes, nDots = duration.nDots;
     lyrics = note.lyrics;
@@ -585,90 +578,90 @@ Jianpu.Note = React.createClass({
       "transform": "translate(" + x + ", " + y + ")"
     }, (highlight ? React.createElement("rect", {
       "className": "highlight",
-      "x": 5.,
-      "y": 20.,
+      "x": 5,
+      "y": 20,
       "width": 40 + 40 * nDashes + 10 * nDots,
-      "height": 100.
+      "height": 100
     }) : void 0), (accidentalText ? React.createElement("text", {
       "className": "accidental",
-      "x": -5.,
-      "y": 80.
+      "x": -5,
+      "y": 80
     }, accidentalText) : void 0), React.createElement("text", {
       "className": "note",
-      "x": 10.,
-      "y": 85.
+      "x": 10,
+      "y": 85
     }, number), ((function() {
-      var _i, _j, _results, _results1;
+      var k, l, ref1, ref2, results, results1;
       if (nOctaves > 0) {
-        _results = [];
-        for (i = _i = 0; _i < nOctaves; i = _i += 1) {
-          _results.push(React.createElement("circle", {
+        results = [];
+        for (i = k = 0, ref1 = nOctaves; k < ref1; i = k += 1) {
+          results.push(React.createElement("circle", {
             "key": i,
             "className": "octave octave-high",
-            "cx": 20.,
+            "cx": 20,
             "cy": 40 - 10 * i,
             "r": 3.5
           }));
         }
-        return _results;
+        return results;
       } else if (nOctaves < 0) {
-        _results1 = [];
-        for (i = _j = 0; _j < -nOctaves; i = _j += 1) {
-          _results1.push(React.createElement("circle", {
+        results1 = [];
+        for (i = l = 0, ref2 = -nOctaves; l < ref2; i = l += 1) {
+          results1.push(React.createElement("circle", {
             "key": i,
             "className": "octave octave-low",
-            "cx": 20.,
+            "cx": 20,
             "cy": 110 + nUnderDashes * 5 + 10 * i,
             "r": 3.5
           }));
         }
-        return _results1;
+        return results1;
       }
     })()), (function() {
-      var _i, _results;
-      _results = [];
-      for (i = _i = 0; _i < nDashes; i = _i += 1) {
-        _results.push(React.createElement("line", {
+      var k, ref1, results;
+      results = [];
+      for (i = k = 0, ref1 = nDashes; k < ref1; i = k += 1) {
+        results.push(React.createElement("line", {
           "key": i,
           "className": "length-dash",
           "x1": 50 + 40 * i,
-          "y1": 70.,
+          "y1": 70,
           "x2": 40 * i + 70,
-          "y2": 70.
+          "y2": 70
         }));
       }
-      return _results;
+      return results;
     })(), (function() {
-      var _i, _results;
-      _results = [];
-      for (i = _i = 0; _i < nUnderDashes; i = _i += 1) {
-        _results.push(React.createElement("line", {
+      var k, ref1, results;
+      results = [];
+      for (i = k = 0, ref1 = nUnderDashes; k < ref1; i = k += 1) {
+        results.push(React.createElement("line", {
           "key": i,
           "className": "length-underline",
-          "x1": 10.,
+          "x1": 10,
           "y1": 95 + i * 5,
-          "x2": 30.,
+          "x2": 30,
           "y2": 95 + i * 5
         }));
       }
-      return _results;
+      return results;
     })(), (function() {
-      var _i, _results;
-      _results = [];
-      for (i = _i = 0; 0 <= nDots ? _i < nDots : _i > nDots; i = 0 <= nDots ? ++_i : --_i) {
-        _results.push(React.createElement("circle", {
+      var k, ref1, results;
+      results = [];
+      for (i = k = 0, ref1 = nDots; 0 <= ref1 ? k < ref1 : k > ref1; i = 0 <= ref1 ? ++k : --k) {
+        results.push(React.createElement("circle", {
           "key": i,
           "className": "length-dot",
           "cx": 40 + 40 * nDashes + 10 * i,
-          "cy": 70.,
+          "cy": 70,
           "r": 3.5
         }));
       }
-      return _results;
+      return results;
     })(), (lyrics.exists ? React.createElement("text", {
       "className": "lyrics",
-      "x": 10.,
-      "y": 135.
+      "x": 10,
+      "y": 135
     }, "" + (lyrics.hyphen ? "-" : "") + lyrics.content) : void 0));
   }
 });

@@ -1,6 +1,6 @@
 var Slider;
 
-Slider = React.createClass({
+Slider = React.createClass({displayName: "Slider",
   propTypes: {
     id: React.PropTypes.string,
     min: React.PropTypes.number,
@@ -24,8 +24,8 @@ Slider = React.createClass({
     return nextState.slider.setValue(nextProps.value);
   },
   componentDidMount: function() {
-    var formatter, id, max, min, slider, step, value, _ref;
-    _ref = this.props, formatter = _ref.formatter, id = _ref.id, min = _ref.min, max = _ref.max, step = _ref.step, value = _ref.value;
+    var formatter, id, max, min, ref, slider, step, value;
+    ref = this.props, formatter = ref.formatter, id = ref.id, min = ref.min, max = ref.max, step = ref.step, value = ref.value;
     slider = new BootstrapSlider(this.getDOMNode(), {
       id: id,
       min: min,

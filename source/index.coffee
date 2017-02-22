@@ -82,6 +82,7 @@ parse = (m) ->
             if isNum[c]
                 duration =
                     switch tempo
+                        when "#" then 1
                         when "-" then 4
                         when "=" then 2
                         else 8
@@ -127,23 +128,49 @@ C                   S   s
 L Ha ha, fooled ya, I'm a submarine.
 """
 
+susanna = """
+M00001  2|3    5    5.6 5 3  1.   2  3  3  2  1  2     1   2|
+T   -=  = =    =    = # = =  =    #  =  =  =  =  -     =   =
+L    Oh I come from A labama with my banjo on my knee. And I'm
+C       S s                                                S
+M3    5   5.  6 531. 2  3    3    2   2  1|
+T=    =   =   # ===  #  =    =    =   =  
+Lgoin' to Louisia na My true love for to see.
+Cs              Ss
+"""
+
+exampleSongs = [
+        name: "Row your boat"
+        markup: rowyourboat
+        melody: parse(rowyourboat)
+        time:
+            upper: 3
+            lower: 4
+        key:
+            left: "1"
+            right: "C"
+    ,
+        name: "Oh Susanna"
+        markup: susanna
+        melody: parse(susanna)
+        time:
+            upper: 4
+            lower: 4
+        key:
+            left: "1"
+            right: "C"
+]
+
 App = React.createClass
     mixins: [React.addons.LinkedStateMixin]
 
     getInitialState: ->
         alignSections: true
-        melody: rowyourboat
+        markup: exampleSongs[0].markup
         rawTime: "3/4"
         rawKey: "1=C"
         sectionsPerLine: 4
-        song:
-            melody: parse(rowyourboat)
-            time:
-                upper: 3
-                lower: 4
-            key:
-                left: "1"
-                right: "C"
+        song: exampleSongs[0]
         isPlaying: null
         volume: 30
         bpm: 120
@@ -266,9 +293,19 @@ App = React.createClass
         Synth.setVolume(volume / 100)
         Synth.play(instrument, "C", 4, crotchetDuration * 2)
 
+    selectSong: (eventKey) ->
+        console.log eventKey
+        @setState
+            song: exampleSongs[eventKey]
+            markup: exampleSongs[eventKey].markup
+
+    changeMarkup: (e) ->
+        @setState
+            markup: e.target.value
+
     render: ->
-        {song, melody, alignSections, rawTime, sectionsPerLine, isPlaying, volume, bpm, instrument, rawKey} = @state
-        
+        {song, markup, alignSections, rawTime, sectionsPerLine, isPlaying, volume, bpm, instrument, rawKey} = @state
+        console.log song.name
         brand =
             <a href="https://github.com/felixhao28/react-jianpu" className="logo">
                 react-jianpu
@@ -288,7 +325,13 @@ App = React.createClass
             <Grid fluid>
                 <Row>
                     <Col md={8}>
-                        <Input groupClassName="markup-input" ref="input" type="textarea" label="Markup" defaultValue={melody} rows={10}/>
+                        <DropdownButton title={song.name} onSelect={@selectSong} >
+                        {
+                            for exampleSong, i in exampleSongs
+                                <MenuItem key={i} eventKey={i}>{exampleSong.name}</MenuItem>
+                        }
+                        </DropdownButton>
+                        <Input groupClassName="markup-input" type="textarea" label="Markup" onChange={@changeMarkup} value={markup} rows={10}/>
                     </Col>
                     <Col md={4}>
                         <PanelGroup defaultActiveKey="1" accordion>
